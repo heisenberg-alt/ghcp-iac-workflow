@@ -1,0 +1,139 @@
+name: 'Bicep CI/CD'
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Level-4-Enterprise/bicep/03-cicd-integration/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Level-4-Enterprise/bicep/03-cicd-integration/**'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  RESOURCE_GROUP: 'rg-cicd-dev'
+  LOCATION: 'eastus'
+  TEMPLATE_PATH: 'Level-4-Enterprise/bicep/03-cicd-integration/solution/main.bicep'
+
+jobs:
+  validate:
+    name: 'Validate'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build Bicep
+        run: az bicep build --file ${{ env.TEMPLATE_PATH }}
+
+      - name: Validate Template
+        run: |
+          az deployment group validate \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file ${{ env.TEMPLATE_PATH }} \
+            --parameters environment=dev
+
+  what-if:
+    name: 'What-If'
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-If
+        id: whatif
+        run: |
+          result=$(az deployment group what-if \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file ${{ env.TEMPLATE_PATH }} \
+            --parameters environment=dev \
+            --no-pretty-print)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$result" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post What-If to PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `## Bicep What-If Results
+            
+            \`\`\`
+            ${{ steps.whatif.outputs.result }}
+            \`\`\`
+            
+            *Pushed by: @${{ github.actor }}*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  deploy:
+    name: 'Deploy'
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: development
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        run: |
+          az group create \
+            --name ${{ env.RESOURCE_GROUP }} \
+            --location ${{ env.LOCATION }}
+
+      - name: Deploy Bicep
+        id: deploy
+        run: |
+          result=$(az deployment group create \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --template-file ${{ env.TEMPLATE_PATH }} \
+            --parameters environment=dev \
+            --query 'properties.outputs' \
+            --output json)
+          echo "outputs=$result" >> $GITHUB_OUTPUT
+
+      - name: Display Outputs
+        run: |
+          echo "Deployment Outputs:"
+          echo '${{ steps.deploy.outputs.outputs }}' | jq .
