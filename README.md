@@ -28,7 +28,7 @@ Dedicated demonstrations showcasing:
 
 A gamified terminal interface with ASCII art, progress tracking, and celebration animations!
 
-![IaC Lab CLI](cli/screenshot.png)
+![IaC Lab CLI](cli/iac-lab.jpg)
 
 **Features:**
 - 🏆 XP points and achievement system
