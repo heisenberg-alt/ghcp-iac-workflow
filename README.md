@@ -24,6 +24,27 @@ Dedicated demonstrations showcasing:
 - ♻️ **Refactoring** - Transform and optimize code
 - 💻 **GitHub CLI Integration** - `gh copilot` commands
 
+### 🎮 Interactive CLI Learning Experience
+
+A gamified terminal interface with ASCII art, progress tracking, and celebration animations!
+
+![IaC Lab CLI](cli/screenshot.png)
+
+**Features:**
+- 🏆 XP points and achievement system
+- 📊 Progress tracking across all 24 challenges
+- ✅ Auto-validation of your solutions
+- 🎉 Celebration animations on completion
+
+**Quick Start:**
+```bash
+# Windows (PowerShell)
+.\cli\iac-lab.ps1
+
+# macOS/Linux (Bash)
+./cli/iac-lab.sh
+```
+
 ---
 
 ## 🛠️ Prerequisites
