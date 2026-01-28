@@ -80,6 +80,21 @@
             overflow: hidden;
         }
 
+        .cards {
+            align-items: stretch;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-body.centered {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .card-header {
             padding: 0.75rem 1rem;
             border-bottom: 1px solid var(--border);
@@ -239,6 +254,7 @@
 <pre><span class="comment"># clone repo</span>
 <span class="cmd">git clone</span> <span class="path">https://github.com/heisenberg-alt/ghcp-iac-workflow.git</span>
 <span class="cmd">cd</span> <span class="path">ghcp-iac-workflow</span>
+<span class="cmd">cd</span> <span class="path">gh-iac</span>
 
 <span class="comment"># build</span>
 <span class="cmd">go build</span> <span class="flag">-o</span> gh-iac.exe .
@@ -287,7 +303,7 @@
                     <span class="dot green"></span>
                     <span>commands</span>
                 </div>
-                <div class="card-body">
+                <div class="card-body centered">
 <pre><span class="cmd">gh iac status</span>     <span class="comment"># agent status</span>
 <span class="cmd">gh iac check</span>      <span class="comment"># full governance</span>
 <span class="cmd">gh iac policy</span>     <span class="comment"># policy check</span>
