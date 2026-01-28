@@ -1,309 +1,174 @@
-# 🚀 GitHub Copilot Infrastructure as Code Lab
+# gh iac - Enterprise IaC Governance Workflow
 
-A hands-on learning lab demonstrating **GitHub Copilot SDK** and **GitHub CLI** capabilities for writing Infrastructure as Code with **Terraform** and **Bicep**.
+A complete Infrastructure as Code governance platform powered by GitHub Copilot SDK with 10 specialized agents and a custom `gh iac` CLI extension.
 
-## 📋 Overview
+## 🏗️ Architecture
 
-This lab provides progressive learning paths from fundamentals to enterprise patterns, with dedicated sections for demonstrating Copilot's AI-powered coding capabilities.
-
-### Learning Tracks
-
-| Level | Focus | Terraform Topics | Bicep Topics |
-|-------|-------|------------------|--------------|
-| **Level 1** | Fundamentals | Providers, resources, variables, outputs | Resources, parameters, variables, outputs |
-| **Level 2** | Intermediate | Networking, compute, data sources, loops | VNets, VMs, conditions, loops, decorators |
-| **Level 3** | Advanced | Modules, remote state, AKS | Modules, deployment scopes, AKS |
-| **Level 4** | Enterprise | Multi-region, policy-as-code, CI/CD | Deployment stacks, template specs, CI/CD |
-
-### Copilot Demos
-
-Dedicated demonstrations showcasing:
-- 🎯 **Code Generation** - Generate IaC from natural language
-- 📖 **Code Explanation** - Understand complex configurations
-- 🔧 **Error Fixing** - AI-assisted troubleshooting
-- ♻️ **Refactoring** - Transform and optimize code
-- 💻 **GitHub CLI Integration** - `gh copilot` commands
-
-### 🧩 Copilot SDK & Extensions
-
-Build your own Copilot-powered tools! See [Copilot-SDK/](Copilot-SDK/) for:
-
-| Demo | Type | Description |
-|------|------|-------------|
-| **MCP Servers** | Protocol | Custom tools for VS Code Copilot Chat |
-| **IaC Skillset** | Extension | 3-endpoint skillset (validate/generate/explain) |
-| **Policy Agent** | Extension | Full agent with Azure Policy compliance |
-| **Cost Estimator** | Extension | Real Azure Retail Prices API integration |
-
-**Tech Stack:** Go 1.21+, MCP Protocol, Server-Sent Events, Azure REST APIs
-
-### 🎮 Interactive CLI Learning Experience
-
-A gamified terminal interface with ASCII art, progress tracking, and celebration animations!
-
-![IaC Lab CLI](cli/iac-lab.jpg)
-
-**Features:**
-- 🏆 XP points and achievement system
-- 📊 Progress tracking across all 24 challenges
-- ✅ Auto-validation of your solutions
-- 🎉 Celebration animations on completion
-
-**Quick Start:**
-```bash
-# Windows (PowerShell)
-.\cli\iac-lab.ps1
-
-# macOS/Linux (Bash)
-./cli/iac-lab.sh
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    gh iac CLI Extension                          │
+│         (GitHub CLI extension for IaC governance)               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Orchestrator (8090)                         │
+│              Central coordinator for all agents                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ Policy (8081) │    │  Cost (8082)  │    │ Drift (8083)  │
+│   Checker     │    │  Estimator    │    │  Detector     │
+└───────────────┘    └───────────────┘    └───────────────┘
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│Security (8084)│    │Compliance(8085│    │ Module (8086) │
+│   Scanner     │    │   Auditor     │    │  Registry     │
+└───────────────┘    └───────────────┘    └───────────────┘
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│Impact (8087)  │    │ Deploy (8088) │    │ Notify (8089) │
+│  Analyzer     │    │  Promoter     │    │   Manager     │
+└───────────────┘    └───────────────┘    └───────────────┘
 ```
 
----
+## 📦 Components
 
-## 🛠️ Prerequisites
+| Component | Port | Description |
+|-----------|------|-------------|
+| **Policy Checker** | 8081 | Validates IaC against organization policies |
+| **Cost Estimator** | 8082 | Estimates Azure resource costs |
+| **Drift Detector** | 8083 | Detects infrastructure drift from IaC state |
+| **Security Scanner** | 8084 | Scans for security vulnerabilities |
+| **Compliance Auditor** | 8085 | Audits against CIS, NIST, SOC2 frameworks |
+| **Module Registry** | 8086 | Manages approved IaC modules |
+| **Impact Analyzer** | 8087 | Analyzes blast radius of changes |
+| **Deploy Promoter** | 8088 | Manages environment promotions |
+| **Notification Manager** | 8089 | Sends alerts via Teams/Slack/Email |
+| **Orchestrator** | 8090 | Central coordinator for all agents |
+| **Dashboard** | 3001 | Real-time status dashboard |
 
-### Required Tools
+## 🚀 Quick Start
 
-| Tool | Version | Installation |
-|------|---------|--------------|
-| **Azure CLI** | >= 2.50 | [Install Guide](https://docs.microsoft.com/cli/azure/install-azure-cli) |
-| **Terraform** | >= 1.5 | [Install Guide](https://developer.hashicorp.com/terraform/downloads) |
-| **Bicep CLI** | >= 0.22 | `az bicep install` |
-| **VS Code** | Latest | [Download](https://code.visualstudio.com/) |
-| **Git** | >= 2.40 | [Download](https://git-scm.com/) |
-| **GitHub CLI** | >= 2.40 | [Install Guide](https://cli.github.com/) |
-| **Go** | >= 1.21 | [Download](https://go.dev/dl/) *(for SDK demos)* |
-| **ngrok** | Latest | [Download](https://ngrok.com/) *(for SDK demos)* |
+### Prerequisites
 
-### Required VS Code Extensions
+- Go 1.21+
+- GitHub CLI (`gh`)
+
+### 1. Build All Agents
 
 ```bash
-# Install via command line
-code --install-extension GitHub.copilot
-code --install-extension GitHub.copilot-chat
-code --install-extension hashicorp.terraform
-code --install-extension ms-azuretools.vscode-bicep
-code --install-extension ms-vscode.azure-account
-code --install-extension ms-azuretools.vscode-azureterraform
+# Windows
+.\scripts\start-all-agents.ps1
+
+# Linux/macOS
+./scripts/start-all-agents.sh
 ```
 
-### Azure Setup
+### 2. Install gh iac CLI Extension
 
 ```bash
-# Login to Azure
-az login
+cd gh-iac
+go build -o gh-iac .
 
-# Set your subscription
-az account set --subscription "YOUR_SUBSCRIPTION_ID"
-
-# Verify
-az account show
+# Install as gh extension
+mkdir -p "$env:LOCALAPPDATA\GitHub CLI\extensions\gh-iac"
+cp gh-iac.exe "$env:LOCALAPPDATA\GitHub CLI\extensions\gh-iac\"
 ```
 
-### GitHub CLI Setup
+### 3. Use the CLI
 
 ```bash
-# Authenticate with GitHub
-gh auth login
+# Check all agents status
+gh iac status
 
-# Enable Copilot in CLI
-gh extension install github/gh-copilot
+# Policy validation
+gh iac policy "resource azurerm_storage_account..."
+cat main.tf | gh iac policy
 
-# Verify
-gh copilot --help
+# Cost estimation
+gh iac cost "resource azurerm_virtual_machine..."
+
+# Security scan
+gh iac security "resource azurerm_key_vault..."
+
+# Full governance check (uses orchestrator)
+gh iac check "your IaC code here"
 ```
 
----
+## 📋 CLI Commands
 
-## 📁 Lab Structure
+| Command | Description |
+|---------|-------------|
+| `gh iac help` | Show all available commands |
+| `gh iac status` | Check status of all 10 agents |
+| `gh iac policy <code>` | Validate IaC against policies |
+| `gh iac cost <code>` | Estimate Azure resource costs |
+| `gh iac drift` | Detect infrastructure drift |
+| `gh iac security <code>` | Scan for vulnerabilities |
+| `gh iac compliance <code>` | CIS/NIST/SOC2 audit |
+| `gh iac modules [search]` | Search approved modules |
+| `gh iac impact <desc>` | Blast radius analysis |
+| `gh iac deploy` | Environment promotion |
+| `gh iac notify <msg>` | Send notifications |
+| `gh iac check <code>` | Full governance check |
 
-```
-copilot-iac/
-├── README.md                           # This file
-├── .github/
-│   └── copilot-instructions.md         # Custom Copilot rules for IaC
-│
-├── Level-1-Fundamentals/               # 🟢 Beginner
-│   ├── terraform/
-│   │   ├── 01-hello-azure/
-│   │   ├── 02-storage-account/
-│   │   └── 03-outputs-locals/
-│   └── bicep/
-│       ├── 01-hello-azure/
-│       ├── 02-storage-account/
-│       └── 03-outputs-variables/
-│
-├── Level-2-Intermediate/               # 🟡 Intermediate
-│   ├── terraform/
-│   │   ├── 01-networking/
-│   │   ├── 02-compute/
-│   │   └── 03-app-service/
-│   └── bicep/
-│       ├── 01-networking/
-│       ├── 02-compute/
-│       └── 03-app-service/
-│
-├── Level-3-Advanced/                   # 🟠 Advanced
-│   ├── terraform/
-│   │   ├── 01-modules/
-│   │   ├── 02-state-management/
-│   │   └── 03-aks-cluster/
-│   └── bicep/
-│       ├── 01-modules/
-│       ├── 02-deployment-stacks/
-│       └── 03-aks-cluster/
-│
-├── Level-4-Enterprise/                 # 🔴 Enterprise
-│   ├── terraform/
-│   │   ├── 01-multi-region/
-│   │   ├── 02-policy-as-code/
-│   │   └── 03-cicd-integration/
-│   └── bicep/
-│       ├── 01-multi-region/
-│       ├── 02-template-specs/
-│       └── 03-cicd-integration/
-│
-├── Copilot-Demos/                      # 🎯 Demo Scenarios
-│   ├── 01-code-generation/
-│   ├── 02-code-explanation/
-│   ├── 03-error-fixing/
-│   ├── 04-refactoring/
-│   └── 05-gh-cli-integration/
-│
-├── Copilot-SDK/                        # 🧩 SDK & Extensions
-│   ├── 01-mcp-servers/                 # MCP Server implementations
-│   ├── 02-iac-skillset/                # Copilot Skillset (3 endpoints)
-│   ├── 03-policy-agent/                # Full Copilot Agent
-│   ├── 04-cost-estimator/              # Azure pricing integration
-│   └── setup-guides/                   # Configuration guides
-│
-└── Solutions/                          # ✅ Reference Solutions
-```
-
----
-
-## 🎯 How to Use This Lab
-
-### For Self-Paced Learning
-
-1. **Start with Level 1** - Complete fundamentals for your preferred tool (Terraform or Bicep)
-2. **Progress sequentially** - Each level builds on previous concepts
-3. **Use Copilot actively** - Try the suggested prompts in each exercise
-4. **Check solutions** - Reference implementations available in `Solutions/`
-
-### For Demonstrations
-
-1. **Navigate to `Copilot-Demos/`** - Self-contained demo scenarios
-2. **Follow the demo scripts** - Step-by-step instructions included
-3. **Customize as needed** - Adapt prompts for your audience
-
-### Exercise Format
-
-Each exercise folder contains:
+## 🔧 Project Structure
 
 ```
-exercise-folder/
-├── README.md           # 📋 Objectives, instructions, Copilot prompts
-├── challenge/          # 🎯 Skeleton code with TODOs
-├── hints/              # 💡 Progressive hints if stuck
-└── solution/           # ✅ Complete working solution
+ghcp-iac-workflow/
+├── agents/                    # 10 governance agents
+│   ├── policy-checker/        # Port 8081
+│   ├── cost-estimator/        # Port 8082
+│   ├── drift-detector/        # Port 8083
+│   ├── security-scanner/      # Port 8084
+│   ├── compliance-auditor/    # Port 8085
+│   ├── module-registry/       # Port 8086
+│   ├── impact-analyzer/       # Port 8087
+│   ├── deploy-promoter/       # Port 8088
+│   ├── notification-manager/  # Port 8089
+│   └── orchestrator/          # Port 8090
+├── gh-iac/                    # GitHub CLI extension
+├── dashboard/                 # Real-time status dashboard
+├── demo/                      # Demo scripts and sample IaC
+└── scripts/                   # Startup scripts
 ```
 
----
+## 🎯 GitHub Copilot SDK Integration
 
-## 🤖 Copilot Tips for IaC
+All agents implement the GitHub Copilot SDK SSE (Server-Sent Events) protocol:
 
-### Effective Prompts
+```go
+// SSE Format
+event: copilot_message
+data: {"content": "Analysis result..."}
 
-```markdown
-# Good prompts for Terraform
-"Create an Azure storage account with blob versioning, soft delete, and private endpoint"
-"Refactor this configuration to use for_each instead of count"
-"Add input validation for the vm_size variable"
-
-# Good prompts for Bicep
-"Create a Bicep module for an App Service with staging slots"
-"Explain what the @secure() decorator does"
-"Convert this ARM template to Bicep"
+event: copilot_done
+data: {}
 ```
 
-### Copilot Chat Commands
+This enables seamless integration with GitHub Copilot extensions and the `gh copilot` CLI.
 
-| Command | Use Case |
-|---------|----------|
-| `/explain` | Understand selected code |
-| `/fix` | Fix errors in selection |
-| `/tests` | Generate tests for code |
-| `/doc` | Generate documentation |
-| `@workspace` | Query entire workspace |
+## 📊 Dashboard
 
-### GitHub CLI Commands
+Access the real-time dashboard at `http://localhost:3001` to monitor:
+- All 10 agent statuses (online/offline)
+- Health check responses
+- System overview
+
+## 🎬 Demo
+
+Run the demo script to see all agents in action:
 
 ```bash
-# Explain a command
-gh copilot explain "terraform state mv"
-
-# Get suggestions
-gh copilot suggest "import existing Azure resource group into Terraform"
-
-# Explain Azure CLI
-gh copilot explain "az deployment group what-if"
+cd demo
+.\demo-script.ps1
 ```
 
----
+## License
 
-## 📚 Additional Resources
-
-### Documentation
-- [Terraform Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
-- [Bicep Documentation](https://docs.microsoft.com/azure/azure-resource-manager/bicep/)
-- [GitHub Copilot Docs](https://docs.github.com/copilot)
-
-### Learning Paths
-- [HashiCorp Learn - Terraform](https://developer.hashicorp.com/terraform/tutorials)
-- [Microsoft Learn - Bicep](https://docs.microsoft.com/learn/paths/bicep-deploy/)
-
----
-
-## 🏷️ Tags & Naming Convention
-
-This lab follows Azure naming conventions:
-
-| Element | Format | Example |
-|---------|--------|---------|
-| Resource Group | `rg-{workload}-{env}-{region}` | `rg-webapp-dev-eastus` |
-| Storage Account | `st{workload}{env}{unique}` | `staboragedev001` |
-| Virtual Network | `vnet-{workload}-{env}-{region}` | `vnet-hub-prod-westus` |
-| Key Vault | `kv-{workload}-{env}-{region}` | `kv-secrets-dev-eastus` |
-
-### Required Tags
-
-```hcl
-# Terraform
-tags = {
-  environment = "dev"
-  project     = "copilot-iac-lab"
-  managed_by  = "terraform"
-}
-```
-
-```bicep
-// Bicep
-tags: {
-  environment: 'dev'
-  project: 'copilot-iac-lab'
-  managed_by: 'bicep'
-}
-```
-
----
-
-## 📝 License
-
-This lab is provided for educational purposes. Feel free to use and modify for your learning and demonstrations.
-
----
-
-**Happy Learning! 🎉**
-
-*Powered by GitHub Copilot* 🤖
+MIT
