@@ -343,6 +343,7 @@ func (s *Server) processAgentRequest(ctx context.Context, req AgentRequest, sse 
 		// Check if user is asking about specific VMs
 		if estimate := s.parseDirectRequest(userMessage, sse); estimate != nil {
 			s.streamCostReport(sse, estimate)
+			sse.SendDone()
 			return
 		}
 
@@ -351,6 +352,7 @@ func (s *Server) processAgentRequest(ctx context.Context, req AgentRequest, sse 
 		sse.SendMessage("- Paste Terraform or Bicep code\n")
 		sse.SendMessage("- Ask about specific resources: \"How much do 3 Standard_D2s_v3 VMs cost?\"\n")
 		sse.SendMessage("- Reference files from your workspace\n")
+		sse.SendDone()
 		return
 	}
 
@@ -365,6 +367,7 @@ func (s *Server) processAgentRequest(ctx context.Context, req AgentRequest, sse 
 
 	if len(resources) == 0 {
 		sse.SendMessage("\n⚠️ No resources found. Make sure the code is valid.\n")
+		sse.SendDone()
 		return
 	}
 
@@ -376,6 +379,7 @@ func (s *Server) processAgentRequest(ctx context.Context, req AgentRequest, sse 
 	report := s.estimateCosts(ctx, resources, "eastus")
 
 	s.streamCostReport(sse, report)
+	sse.SendDone()
 }
 
 func (s *Server) streamCostReport(sse *SSEWriter, report *CostReport) {
@@ -962,6 +966,11 @@ func (s *SSEWriter) SendReferences(refs []Reference) {
 	data, _ := json.Marshal(ReferenceEvent{References: refs})
 	fmt.Fprintf(s.w, "event: copilot_references\n")
 	fmt.Fprintf(s.w, "data: %s\n\n", string(data))
+	s.flusher.Flush()
+}
+
+func (s *SSEWriter) SendDone() {
+	fmt.Fprintf(s.w, "event: copilot_done\ndata: {}\n\n")
 	s.flusher.Flush()
 }
 

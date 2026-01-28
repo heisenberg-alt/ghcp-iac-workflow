@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -648,7 +649,7 @@ func (s *Server) parseBicep(code string) []Resource {
 
 	// Simple regex-based parser for Bicep
 	// Pattern: resource name 'type@version' = { ... }
-	resourcePattern := regexp.MustCompile(`(?m)^resource\s+(\w+)\s+'([^']+)'`)
+	resourcePattern := regexp.MustCompile(`(?m)^resource\s+(\w+)\s+'([^']+)'\s*=\s*\{`)
 
 	matches := resourcePattern.FindAllStringSubmatchIndex(code, -1)
 
@@ -663,16 +664,109 @@ func (s *Server) parseBicep(code string) []Resource {
 			// Find the line number
 			line := strings.Count(code[:match[0]], "\n") + 1
 
+			// Find the resource block end
+			blockStart := match[1] - 1 // Position of opening brace
+			blockEnd := findMatchingBrace(code, blockStart)
+			resourceBlock := code[blockStart : blockEnd+1]
+
+			// Parse Bicep properties
+			props := parseBicepProperties(resourceBlock)
+
 			resources = append(resources, Resource{
 				Type:       tfType,
 				Name:       resourceName,
-				Properties: make(map[string]interface{}),
+				Properties: props,
 				Line:       line,
 			})
 		}
 	}
 
 	return resources
+}
+
+// parseBicepProperties extracts properties from a Bicep resource block
+// and maps them to Terraform-equivalent names for policy checking
+func parseBicepProperties(block string) map[string]interface{} {
+	props := make(map[string]interface{})
+
+	// Bicep to Terraform property mapping for storage accounts
+	bicepToTfProps := map[string]string{
+		"supportsHttpsTrafficOnly": "enable_https_traffic_only",
+		"minimumTlsVersion":        "min_tls_version",
+		"allowBlobPublicAccess":    "allow_blob_public_access",
+		"publicNetworkAccess":      "public_network_access_enabled",
+	}
+
+	// Parse simple key: value properties
+	propPattern := regexp.MustCompile(`(?m)^\s*(\w+)\s*:\s*(.+?)\s*$`)
+	propMatches := propPattern.FindAllStringSubmatch(block, -1)
+
+	for _, m := range propMatches {
+		if len(m) >= 3 {
+			key := m[1]
+			value := strings.TrimSpace(m[2])
+
+			// Map to Terraform property name if available
+			if tfKey, ok := bicepToTfProps[key]; ok {
+				key = tfKey
+			}
+
+			// Parse the value
+			props[key] = parseBicepValue(value)
+		}
+	}
+
+	// Also look for nested properties block
+	propsBlockPattern := regexp.MustCompile(`(?s)properties\s*:\s*\{([^}]+)\}`)
+	if propsMatch := propsBlockPattern.FindStringSubmatch(block); len(propsMatch) >= 2 {
+		nestedProps := propsMatch[1]
+		nestedPattern := regexp.MustCompile(`(?m)^\s*(\w+)\s*:\s*(.+?)\s*$`)
+		nestedMatches := nestedPattern.FindAllStringSubmatch(nestedProps, -1)
+
+		for _, m := range nestedMatches {
+			if len(m) >= 3 {
+				key := m[1]
+				value := strings.TrimSpace(m[2])
+
+				// Map to Terraform property name if available
+				if tfKey, ok := bicepToTfProps[key]; ok {
+					key = tfKey
+				}
+
+				props[key] = parseBicepValue(value)
+			}
+		}
+	}
+
+	return props
+}
+
+// parseBicepValue converts Bicep values to Go types
+func parseBicepValue(value string) interface{} {
+	// Remove trailing comments
+	if idx := strings.Index(value, "//"); idx != -1 {
+		value = strings.TrimSpace(value[:idx])
+	}
+
+	// Boolean
+	if value == "true" {
+		return true
+	}
+	if value == "false" {
+		return false
+	}
+
+	// String (remove quotes)
+	if strings.HasPrefix(value, "'") && strings.HasSuffix(value, "'") {
+		return strings.Trim(value, "'")
+	}
+
+	// Number
+	if num, err := strconv.Atoi(value); err == nil {
+		return num
+	}
+
+	return value
 }
 
 func bicepToTerraformType(bicepType string) string {
