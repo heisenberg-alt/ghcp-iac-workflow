@@ -262,14 +262,15 @@
                     <span>mac / linux</span>
                 </div>
                 <div class="card-body">
-<pre><span class="comment"># build</span>
-<span class="cmd">cd</span> <span class="path">enterprise/gh-iac</span>
-<span class="cmd">go build</span> <span class="flag">-o</span> gh-iac .
 <pre><span class="comment"># clone repo</span>
 <span class="cmd">git clone</span> <span class="path">https://github.com/heisenberg-alt/ghcp-iac-workflow.git</span>
 <span class="cmd">cd</span> <span class="path">ghcp-iac-workflow</span>
 
 <span class="comment"># build</span>
+<span class="cmd">cd</span> <span class="path">gh-iac</span>
+<span class="cmd">go build</span> <span class="flag">-o</span> gh-iac .
+
+<span class="comment"># install</span>
 <span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="path">~/.local/share/gh/extensions/gh-iac</span>
 <span class="cmd">cp</span> gh-iac <span class="path">~/.local/share/gh/extensions/gh-iac/</span>
 
