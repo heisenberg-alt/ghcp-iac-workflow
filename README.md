@@ -24,6 +24,18 @@ A complete Infrastructure as Code governance platform powered by GitHub Copilot 
 
 - Go 1.21+
 - GitHub CLI (`gh`)
+- `curl` and `lsof` (used by the startup script)
+
+### macOS Setup (Quick Path)
+
+```bash
+# Install required tools (Homebrew)
+xcode-select --install
+brew install go gh
+
+# macOS already includes curl and lsof by default
+chmod +x ./scripts/start-all-agents.sh
+```
 
 ### 1. Build All Agents
 
@@ -32,6 +44,7 @@ A complete Infrastructure as Code governance platform powered by GitHub Copilot 
 .\scripts\start-all-agents.ps1
 
 # Linux/macOS
+chmod +x ./scripts/start-all-agents.sh
 ./scripts/start-all-agents.sh
 ```
 
@@ -42,8 +55,8 @@ cd gh-iac
 go build -o gh-iac .
 
 # Install as gh extension
-mkdir -p "$env:LOCALAPPDATA\GitHub CLI\extensions\gh-iac"
-cp gh-iac.exe "$env:LOCALAPPDATA\GitHub CLI\extensions\gh-iac\"
+gh extension install .
+# (or from repo root: gh extension install ./gh-iac)
 ```
 
 ### 3. Use the CLI

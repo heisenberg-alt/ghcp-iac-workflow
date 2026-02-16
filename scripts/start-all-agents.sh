@@ -27,20 +27,20 @@ NC='\033[0m' # No Color
 # =============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Agent definitions: Name|Port|Directory|Executable
 declare -a AGENTS=(
-    "Policy Checker|8081|03-policy-agent|policy-agent"
-    "Cost Estimator|8082|04-cost-estimator|cost-estimator"
-    "Drift Detector|8083|enterprise/agents/drift-detector|drift-detector"
-    "Security Scanner|8084|enterprise/agents/security-scanner|security-scanner"
-    "Compliance Auditor|8085|enterprise/agents/compliance-auditor|compliance-auditor"
-    "Module Registry|8086|enterprise/agents/module-registry|module-registry"
-    "Impact Analyzer|8087|enterprise/agents/impact-analyzer|impact-analyzer"
-    "Deploy Promoter|8088|enterprise/agents/deploy-promoter|deploy-promoter"
-    "Notification Manager|8089|enterprise/agents/notification-manager|notification-manager"
-    "Orchestrator|8090|enterprise/agents/orchestrator|orchestrator"
+    "Policy Checker|8081|agents/policy-checker|policy-agent"
+    "Cost Estimator|8082|agents/cost-estimator|cost-estimator"
+    "Drift Detector|8083|agents/drift-detector|drift-detector"
+    "Security Scanner|8084|agents/security-scanner|security-scanner"
+    "Compliance Auditor|8085|agents/compliance-auditor|compliance-auditor"
+    "Module Registry|8086|agents/module-registry|module-registry"
+    "Impact Analyzer|8087|agents/impact-analyzer|impact-analyzer"
+    "Deploy Promoter|8088|agents/deploy-promoter|deploy-promoter"
+    "Notification Manager|8089|agents/notification-manager|notification-manager"
+    "Orchestrator|8090|agents/orchestrator|orchestrator"
 )
 
 # =============================================================================

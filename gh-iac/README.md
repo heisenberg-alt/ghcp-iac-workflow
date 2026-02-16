@@ -6,8 +6,8 @@ GitHub CLI Extension for IaC Governance - Powered by GitHub Copilot SDK
 
 ```bash
 # Build the extension
-cd enterprise/gh-iac
-go build -o gh-iac.exe .
+cd gh-iac
+go build -o gh-iac .
 
 # Install as gh extension
 gh extension install .
