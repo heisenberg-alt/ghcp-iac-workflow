@@ -1,0 +1,54 @@
+# Build artifacts
+/ghcp-iac
+/cmd/server/server
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Terraform state (should never be committed)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Docker
+docker-compose.override.yml
+
+# Old agent binaries
+agents/*/compliance
+agents/*/compliance-auditor
+agents/*/cost-estimator
+agents/*/deploy-promoter
+agents/*/drift-detector
+agents/*/impact-analyzer
+agents/*/module-registry
+agents/*/notification-manager
+agents/*/orchestrator
+agents/*/policy-checker
+agents/*/security-scanner
+agents/*/cost
+gh-iac/gh-iac
+dashboard/dashboard

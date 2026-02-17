@@ -1,0 +1,34 @@
+services:
+  ghcp-iac:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-local}
+        BUILD_TIME: ${BUILD_TIME:-now}
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - ENVIRONMENT=${ENVIRONMENT:-dev}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4o-mini}
+      - MODEL_ENDPOINT=${MODEL_ENDPOINT:-https://models.inference.ai.azure.com}
+      - ENABLE_LLM=${ENABLE_LLM:-true}
+      - ENABLE_COST_API=${ENABLE_COST_API:-true}
+      - ENABLE_NOTIFICATIONS=${ENABLE_NOTIFICATIONS:-false}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+      - TEAMS_WEBHOOK_URL=${TEAMS_WEBHOOK_URL:-}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

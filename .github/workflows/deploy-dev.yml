@@ -1,0 +1,73 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  packages: read
+
+env:
+  ENVIRONMENT: dev
+  AZURE_RESOURCE_GROUP: rg-ghcp-iac-dev
+  CONTAINER_APP_NAME: ca-ghcp-iac-dev
+  ACR_NAME: acrghcpiacdev
+
+jobs:
+  deploy:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push to ACR
+        run: |
+          IMAGE="${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:${{ github.sha }}"
+          docker build \
+            --build-arg VERSION=${{ github.sha }} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t "$IMAGE" .
+          docker push "$IMAGE"
+          docker tag "$IMAGE" "${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:latest"
+          docker push "${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:latest"
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image "${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:${{ github.sha }}"
+
+      - name: Verify deployment
+        run: |
+          FQDN=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "Deployed to: https://${FQDN}"
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${FQDN}/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Waiting for health check (attempt $i)..."
+            sleep 10
+          done
+          echo "Health check failed"
+          exit 1

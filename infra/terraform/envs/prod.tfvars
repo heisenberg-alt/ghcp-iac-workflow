@@ -1,0 +1,11 @@
+environment         = "prod"
+location            = "eastus"
+container_image     = "ghcpiacprod.azurecr.io/ghcp-iac"
+container_image_tag = "v1.0.0"
+cpu                 = 1.0
+memory              = "2Gi"
+min_replicas        = 2
+max_replicas        = 5
+model_name          = "gpt-4o"
+enable_llm          = true
+enable_notifications = true

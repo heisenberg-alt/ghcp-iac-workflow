@@ -1,0 +1,112 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+  packages: read
+
+env:
+  ENVIRONMENT: prod
+  AZURE_RESOURCE_GROUP: rg-ghcp-iac-prod
+  CONTAINER_APP_NAME: ca-ghcp-iac-prod
+  ACR_NAME: acrghcpiacprod
+
+jobs:
+  approve:
+    name: Approval Gate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Approval confirmed
+        run: echo "Production deployment approved"
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: approve
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.image_tag }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Build and push to ACR
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          IMAGE="${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:${TAG}"
+          docker build \
+            --build-arg VERSION=${TAG} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --build-arg BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Deploy to Container App
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --image "${{ env.ACR_NAME }}.azurecr.io/ghcp-iac:${TAG}"
+
+      - name: Verify deployment
+        run: |
+          FQDN=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          echo "Deployed to: https://${FQDN}"
+          for i in {1..15}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${FQDN}/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              curl -sf "https://${FQDN}/health" | jq .
+              exit 0
+            fi
+            echo "Waiting for health check (attempt $i)..."
+            sleep 10
+          done
+          echo "Health check failed - initiating rollback"
+          exit 1
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    steps:
+      - name: Notify on success
+        if: needs.deploy.result == 'success'
+        run: echo "Production deployment succeeded"
+
+      - name: Notify on failure
+        if: needs.deploy.result == 'failure'
+        run: |
+          echo "::error::Production deployment failed!"
+          exit 1

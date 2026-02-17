@@ -1,0 +1,11 @@
+environment         = "test"
+location            = "eastus"
+container_image     = "ghcpiactest.azurecr.io/ghcp-iac"
+container_image_tag = "latest"
+cpu                 = 0.5
+memory              = "1Gi"
+min_replicas        = 1
+max_replicas        = 2
+model_name          = "gpt-4o-mini"
+enable_llm          = true
+enable_notifications = false
