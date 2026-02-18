@@ -19,7 +19,7 @@ ARG BUILD_TIME=unknown
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.buildTime=${BUILD_TIME}" \
-    -o /ghcp-iac ./cmd/server
+    -o /ghcp-iac ./cmd/agent-host
 
 # Runtime stage
 FROM alpine:3.19

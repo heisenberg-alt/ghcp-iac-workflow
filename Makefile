@@ -9,21 +9,27 @@ LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.bu
 
 # Build
 build:
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/server
+	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/agent-host
 	go build $(LDFLAGS) -o bin/$(CLI_NAME) ./cmd/gh-iac
 
 build-server:
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/server
+	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/agent-host
 
 build-cli:
 	go build $(LDFLAGS) -o bin/$(CLI_NAME) ./cmd/gh-iac
 
+build-legacy:
+	go build $(LDFLAGS) -o bin/$(BINARY_NAME)-legacy ./cmd/server
+
 # Test
 test:
-	go test -v -race -count=1 ./internal/...
+	go test -v -race -count=1 ./...
+
+test-agents:
+	go test -v -race -count=1 ./agents/...
 
 test-integration:
-	go test -v -race -count=1 -tags=integration ./cmd/server/...
+	go test -v -race -count=1 -tags=integration ./cmd/...
 
 test-cover:
 	go test -race -coverprofile=coverage.out -covermode=atomic ./internal/... ./cmd/...
@@ -50,11 +56,17 @@ run: build-server
 	./bin/$(BINARY_NAME)
 
 dev:
+	go run ./cmd/agent-host
+
+dev-mcp:
+	go run ./cmd/agent-host -- --transport=stdio
+
+dev-legacy:
 	go run ./cmd/server
 
 # Docker
 docker:
-	docker build -t ghcp-iac:$(VERSION) -t ghcp-iac:latest .
+	docker build -t ghcp-iac:$(VERSION) -t ghcp-iac:latest --build-arg BUILD_CMD=agent-host .
 
 docker-run:
 	docker run -p 8080:8080 --env-file .env ghcp-iac:latest

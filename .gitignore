@@ -1,3 +1,10 @@
+# Binaries
+bin/
+agent-host
+ghcp-iac-server
+gh-iac
+*.exe
+
 # Terraform
 .terraform/
 *.tfstate
@@ -19,3 +26,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Coverage
+coverage.out
+coverage.html
