@@ -6,8 +6,8 @@ import (
 
 func TestAllRules_Count(t *testing.T) {
 	rules := AllRules()
-	if len(rules) != 17 {
-		t.Errorf("AllRules() returned %d rules, want 17", len(rules))
+	if len(rules) != 12 {
+		t.Errorf("AllRules() returned %d rules, want 12", len(rules))
 	}
 }
 
@@ -228,22 +228,5 @@ func TestSeverityIcon(t *testing.T) {
 	got := severityIcon(SeverityCritical)
 	if got == "" {
 		t.Error("severityIcon should return non-empty for critical")
-	}
-}
-
-func TestShortType(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"azurerm_storage_account", "storage_account"},
-		{"azurerm_key_vault", "key_vault"},
-		{"standalone", "standalone"},
-	}
-	for _, tt := range tests {
-		got := shortType(tt.input)
-		if got != tt.want {
-			t.Errorf("shortType(%q) = %q, want %q", tt.input, got, tt.want)
-		}
 	}
 }

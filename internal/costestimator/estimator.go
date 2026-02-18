@@ -330,7 +330,7 @@ func (e *Estimator) streamReport(sse *server.SSEWriter, report *CostReport) {
 	if len(report.Items) > 0 {
 		sse.SendMessage("| Resource | SKU | Monthly |\n|----------|-----|---------|\n")
 		for _, item := range report.Items {
-			name := shortType(item.ResourceType) + "." + item.ResourceName
+			name := parser.ShortType(item.ResourceType) + "." + item.ResourceName
 			sse.SendMessage(fmt.Sprintf("| %s | %s | $%.2f |\n", name, item.SKU, item.MonthlyCost))
 		}
 		sse.SendMessage("\n")
@@ -377,13 +377,6 @@ func (e *Estimator) showUsage(sse *server.SSEWriter) {
 	sse.SendMessage("- Storage Accounts\n")
 	sse.SendMessage("- App Service Plans\n")
 	sse.SendMessage("- Container Registries, Key Vaults\n\n")
-}
-
-func shortType(t string) string {
-	if i := strings.IndexByte(t, '_'); i >= 0 {
-		return t[i+1:]
-	}
-	return t
 }
 
 // ==================== Price Tables ====================

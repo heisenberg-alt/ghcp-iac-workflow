@@ -149,7 +149,7 @@ func (a *Analyzer) streamFindings(sse *server.SSEWriter, findings []Finding, res
 	}
 
 	sse.SendMessage("## Summary\n\n")
-	sse.SendMessage(fmt.Sprintf("| Severity | Count |\n|----------|-------|\n"))
+	sse.SendMessage("| Severity | Count |\n|----------|-------|\n")
 	for _, sev := range []string{SeverityCritical, SeverityHigh, SeverityMedium, SeverityLow, SeverityInfo} {
 		if c, ok := counts[sev]; ok {
 			icon := severityIcon(sev)
@@ -171,7 +171,7 @@ func (a *Analyzer) streamFindings(sse *server.SSEWriter, findings []Finding, res
 		for _, f := range catFindings {
 			sse.SendMessage(fmt.Sprintf("| %s | %s %s | %s.%s | %s | %s |\n",
 				f.RuleID, severityIcon(f.Severity), f.Severity,
-				shortType(f.ResourceType), f.Resource,
+				parser.ShortType(f.ResourceType), f.Resource,
 				f.Message, f.Remediation))
 		}
 		sse.SendMessage("\n")
@@ -185,7 +185,7 @@ func (a *Analyzer) streamBlastRadius(sse *server.SSEWriter, resources []parser.R
 	for _, res := range resources {
 		weight := resourceRiskWeight(res.Type)
 		total += weight
-		sse.SendMessage(fmt.Sprintf("- **%s.%s** — risk weight: %d\n", shortType(res.Type), res.Name, weight))
+		sse.SendMessage(fmt.Sprintf("- **%s.%s** — risk weight: %d\n", parser.ShortType(res.Type), res.Name, weight))
 	}
 
 	level := "Low"
@@ -253,13 +253,6 @@ func severityIcon(sev string) string {
 	default:
 		return "⚪"
 	}
-}
-
-func shortType(t string) string {
-	if i := strings.IndexByte(t, '_'); i >= 0 {
-		return t[i+1:]
-	}
-	return t
 }
 
 func resourceRiskWeight(resType string) int {

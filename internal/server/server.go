@@ -3,19 +3,16 @@ package server
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/auth"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/config"
 	"github.com/google/uuid"
 )
@@ -169,7 +166,7 @@ func (s *Server) withMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			r.Body = io.NopCloser(bytes.NewReader(body))
 
 			sig := r.Header.Get("X-Hub-Signature-256")
-			if !verifySignature(body, sig, s.config.WebhookSecret) {
+			if !auth.VerifySignature(body, sig, s.config.WebhookSecret) {
 				s.logger.Printf("Rejected request [%s]: invalid signature", reqID)
 				http.Error(w, "Invalid signature", http.StatusUnauthorized)
 				return
@@ -188,21 +185,4 @@ func (s *Server) withMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r.WithContext(ctx))
 		s.logger.Printf("<- %s %s [%s] %v", r.Method, r.URL.Path, reqID, time.Since(start))
 	}
-}
-
-// verifySignature validates the X-Hub-Signature-256 header against the request body.
-func verifySignature(body []byte, signature, secret string) bool {
-	if signature == "" {
-		return false
-	}
-	if !strings.HasPrefix(signature, "sha256=") {
-		return false
-	}
-	sigBytes, err := hex.DecodeString(strings.TrimPrefix(signature, "sha256="))
-	if err != nil {
-		return false
-	}
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write(body)
-	return hmac.Equal(sigBytes, mac.Sum(nil))
 }

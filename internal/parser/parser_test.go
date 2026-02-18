@@ -322,3 +322,20 @@ func TestResource_String(t *testing.T) {
 		t.Errorf("Resource.String() = %q, want azurerm_storage_account.ex", got)
 	}
 }
+
+func TestShortType(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"azurerm_storage_account", "storage_account"},
+		{"azurerm_key_vault", "key_vault"},
+		{"standalone", "standalone"},
+	}
+	for _, tt := range tests {
+		got := ShortType(tt.input)
+		if got != tt.want {
+			t.Errorf("ShortType(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}

@@ -2,15 +2,13 @@ package server
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/auth"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/config"
 )
 
@@ -349,9 +347,7 @@ func TestServer_SignatureVerification(t *testing.T) {
 	body := `{"messages":[{"role":"user","content":"test"}]}`
 
 	// Valid signature
-	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(body))
-	validSig := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	validSig := auth.SignPayload([]byte(body), secret)
 
 	req := httptest.NewRequest(http.MethodPost, "/agent", strings.NewReader(body))
 	req.Header.Set("X-Hub-Signature-256", validSig)

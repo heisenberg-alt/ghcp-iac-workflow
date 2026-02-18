@@ -92,7 +92,7 @@ func policyRules() []Rule {
 			Category:      "Policy",
 			Severity:      SeverityHigh,
 			Title:         "Storage HTTPS Required",
-			Description:   "Storage account must enforce HTTPS-only traffic",
+			Description:   "Storage account must enforce HTTPS-only traffic (CIS Azure 4.1)",
 			Remediation:   "Set enable_https_traffic_only = true",
 			ResourceTypes: []string{"azurerm_storage_account"},
 			Property:      "enable_https_traffic_only",
@@ -114,7 +114,7 @@ func policyRules() []Rule {
 			Category:      "Policy",
 			Severity:      SeverityMedium,
 			Title:         "Minimum TLS Version",
-			Description:   "Resources must use TLS 1.2 or higher",
+			Description:   "Resources must use TLS 1.2 or higher (SOC2 CC6.6)",
 			Remediation:   "Set min_tls_version = \"TLS1_2\"",
 			ResourceTypes: []string{"azurerm_storage_account", "azurerm_redis_cache", "azurerm_mssql_server"},
 			Property:      "min_tls_version",
@@ -125,7 +125,7 @@ func policyRules() []Rule {
 			Category:      "Policy",
 			Severity:      SeverityHigh,
 			Title:         "No Public Blob Access",
-			Description:   "Storage accounts must not allow public blob access",
+			Description:   "Storage accounts must not allow public blob access (SOC2 CC6.1)",
 			Remediation:   "Set allow_blob_public_access = false",
 			ResourceTypes: []string{"azurerm_storage_account"},
 			Property:      "allow_blob_public_access",
@@ -136,7 +136,7 @@ func policyRules() []Rule {
 			Category:      "Policy",
 			Severity:      SeverityHigh,
 			Title:         "Key Vault Soft Delete",
-			Description:   "Key Vault must have soft delete enabled",
+			Description:   "Key Vault must have soft delete enabled (CIS Azure 8.1)",
 			Remediation:   "Set soft_delete_enabled = true",
 			ResourceTypes: []string{"azurerm_key_vault"},
 			Property:      "soft_delete_enabled",
@@ -188,21 +188,6 @@ func securityRules() []Rule {
 			},
 		},
 		{
-			ID:            "SEC-003",
-			Category:      "Security",
-			Severity:      SeverityHigh,
-			Title:         "HTTPS Not Enforced",
-			Description:   "HTTPS traffic is not enforced",
-			Remediation:   "Set enable_https_traffic_only = true",
-			ResourceTypes: []string{"azurerm_storage_account"},
-			CheckFn: func(props map[string]interface{}) string {
-				if v, ok := props["enable_https_traffic_only"]; ok && v == false {
-					return "HTTPS traffic is not enforced"
-				}
-				return ""
-			},
-		},
-		{
 			ID:            "SEC-004",
 			Category:      "Security",
 			Severity:      SeverityMedium,
@@ -235,28 +220,6 @@ func securityRules() []Rule {
 
 func complianceRules() []Rule {
 	return []Rule{
-		{
-			ID:            "CIS-4.1",
-			Category:      "Compliance",
-			Severity:      SeverityHigh,
-			Title:         "CIS: Storage HTTPS",
-			Description:   "CIS Azure 4.1 - Ensure storage account HTTPS transfer",
-			Remediation:   "Set enable_https_traffic_only = true",
-			ResourceTypes: []string{"azurerm_storage_account"},
-			Property:      "enable_https_traffic_only",
-			Expected:      true,
-		},
-		{
-			ID:            "CIS-8.1",
-			Category:      "Compliance",
-			Severity:      SeverityMedium,
-			Title:         "CIS: Key Vault Expiry",
-			Description:   "CIS Azure 8.1 - Ensure Key Vault is recoverable",
-			Remediation:   "Set soft_delete_enabled = true",
-			ResourceTypes: []string{"azurerm_key_vault"},
-			Property:      "soft_delete_enabled",
-			Expected:      true,
-		},
 		{
 			ID:            "NIST-SC7",
 			Category:      "Compliance",
@@ -292,28 +255,6 @@ func complianceRules() []Rule {
 				}
 				return ""
 			},
-		},
-		{
-			ID:            "SOC2-CC6.1",
-			Category:      "Compliance",
-			Severity:      SeverityHigh,
-			Title:         "SOC2 CC6.1: Logical Access",
-			Description:   "Logical access must be restricted",
-			Remediation:   "Disable public blob access",
-			ResourceTypes: []string{"azurerm_storage_account"},
-			Property:      "allow_blob_public_access",
-			Expected:      false,
-		},
-		{
-			ID:            "SOC2-CC6.6",
-			Category:      "Compliance",
-			Severity:      SeverityMedium,
-			Title:         "SOC2 CC6.6: Encryption in Transit",
-			Description:   "Data in transit must be encrypted",
-			Remediation:   "Set min_tls_version = TLS1_2",
-			ResourceTypes: []string{"azurerm_storage_account", "azurerm_redis_cache"},
-			Property:      "min_tls_version",
-			Expected:      "TLS1_2",
 		},
 	}
 }
