@@ -6,6 +6,6 @@ cpu                 = 0.5
 memory              = "1Gi"
 min_replicas        = 1
 max_replicas        = 2
-model_name          = "gpt-4o-mini"
+model_name          = "gpt-4.1-mini"
 enable_llm          = true
 enable_notifications = false

@@ -197,7 +197,7 @@ func TestServer_Health(t *testing.T) {
 	cfg := &config.Config{
 		Port:        "0",
 		Environment: "dev",
-		ModelName:   "gpt-4o-mini",
+		ModelName:   "gpt-4.1-mini",
 		EnableLLM:   true,
 	}
 	handler := &mockHandler{}
@@ -227,7 +227,7 @@ func TestServer_AgentEndpoint_POST(t *testing.T) {
 	cfg := &config.Config{
 		Port:        "0",
 		Environment: "dev",
-		ModelName:   "gpt-4o-mini",
+		ModelName:   "gpt-4.1-mini",
 	}
 	handler := &mockHandler{}
 	srv := New(cfg, handler)
@@ -259,7 +259,7 @@ func TestServer_AgentEndpoint_GET(t *testing.T) {
 	cfg := &config.Config{
 		Port:        "0",
 		Environment: "dev",
-		ModelName:   "gpt-4o-mini",
+		ModelName:   "gpt-4.1-mini",
 	}
 	handler := &mockHandler{}
 	srv := New(cfg, handler)
@@ -277,7 +277,7 @@ func TestServer_Middleware_RequestID(t *testing.T) {
 	cfg := &config.Config{
 		Port:        "0",
 		Environment: "dev",
-		ModelName:   "gpt-4o-mini",
+		ModelName:   "gpt-4.1-mini",
 	}
 
 	var capturedReqID string
@@ -313,7 +313,7 @@ func TestServer_Middleware_TokenExtraction(t *testing.T) {
 	cfg := &config.Config{
 		Port:        "0",
 		Environment: "dev",
-		ModelName:   "gpt-4o-mini",
+		ModelName:   "gpt-4.1-mini",
 	}
 
 	var capturedToken string
@@ -339,7 +339,7 @@ func TestServer_SignatureVerification(t *testing.T) {
 		Port:          "0",
 		Environment:   "prod",
 		WebhookSecret: secret,
-		ModelName:     "gpt-4o",
+		ModelName:     "gpt-4.1",
 	}
 	handler := &mockHandler{}
 	srv := New(cfg, handler)

@@ -64,7 +64,7 @@ variable "github_webhook_secret" {
 variable "model_name" {
   description = "LLM model name"
   type        = string
-  default     = "gpt-4o-mini"
+  default     = "gpt-4.1-mini"
 }
 
 variable "enable_llm" {

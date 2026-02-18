@@ -34,8 +34,8 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.LogLevel != "debug" {
 		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "debug")
 	}
-	if cfg.ModelName != "gpt-4o-mini" {
-		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4o-mini")
+	if cfg.ModelName != "gpt-4.1-mini" {
+		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4.1-mini")
 	}
 	if cfg.ModelEndpoint != "https://models.inference.ai.azure.com" {
 		t.Errorf("ModelEndpoint = %q, want default", cfg.ModelEndpoint)
@@ -67,8 +67,8 @@ func TestLoad_ProdEnvironment(t *testing.T) {
 	if cfg.Environment != EnvProd {
 		t.Errorf("Environment = %q, want %q", cfg.Environment, EnvProd)
 	}
-	if cfg.ModelName != "gpt-4o" {
-		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4o")
+	if cfg.ModelName != "gpt-4.1" {
+		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4.1")
 	}
 	if cfg.LogLevel != "info" {
 		t.Errorf("LogLevel = %q, want %q", cfg.LogLevel, "info")
@@ -88,8 +88,8 @@ func TestLoad_TestEnvironment(t *testing.T) {
 	if cfg.Environment != EnvTest {
 		t.Errorf("Environment = %q, want %q", cfg.Environment, EnvTest)
 	}
-	if cfg.ModelName != "gpt-4o-mini" {
-		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4o-mini")
+	if cfg.ModelName != "gpt-4.1-mini" {
+		t.Errorf("ModelName = %q, want %q", cfg.ModelName, "gpt-4.1-mini")
 	}
 }
 

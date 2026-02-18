@@ -14,7 +14,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-dev}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-}
-      - MODEL_NAME=${MODEL_NAME:-gpt-4o-mini}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4.1-mini}
       - MODEL_ENDPOINT=${MODEL_ENDPOINT:-https://models.inference.ai.azure.com}
       - ENABLE_LLM=${ENABLE_LLM:-true}
       - ENABLE_COST_API=${ENABLE_COST_API:-true}

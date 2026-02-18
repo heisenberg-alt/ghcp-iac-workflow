@@ -76,7 +76,7 @@ make dev
 # → http://localhost:8080</code></pre>
 
 <pre><code>curl http://localhost:8080/health
-# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4o-mini"}</code></pre>
+# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4.1-mini"}</code></pre>
 
 <!-- ============================================ -->
 <h2 id="try-it">Try It Out</h2>
@@ -109,7 +109,7 @@ make dev
 docker run -d -p 8080:8080 \
   -e ENVIRONMENT=prod \
   -e GITHUB_WEBHOOK_SECRET=&lt;secret&gt; \
-  -e MODEL_NAME=gpt-4o \
+  -e MODEL_NAME=gpt-4.1 \
   ghcp-iac:latest</code></pre>
 
 <p>Or with docker-compose:</p>
@@ -136,7 +136,7 @@ terraform output container_app_fqdn</code></pre>
   <tr><td>Memory</td><td>0.5 Gi</td><td>1 Gi</td><td>2 Gi</td></tr>
   <tr><td>Min replicas</td><td>0</td><td>1</td><td>2</td></tr>
   <tr><td>Max replicas</td><td>1</td><td>3</td><td>5</td></tr>
-  <tr><td>Model</td><td>gpt-4o-mini</td><td>gpt-4o-mini</td><td>gpt-4o</td></tr>
+  <tr><td>Model</td><td>gpt-4.1-mini</td><td>gpt-4.1-mini</td><td>gpt-4.1</td></tr>
 </table>
 
 <!-- ============================================ -->
@@ -195,7 +195,7 @@ gh release create v1.0.0 --title "v1.0.0"
   <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Server port</td></tr>
   <tr><td><code>ENVIRONMENT</code></td><td><code>dev</code></td><td><code>dev</code> / <code>test</code> / <code>prod</code></td></tr>
   <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>—</td><td>Required in prod</td></tr>
-  <tr><td><code>MODEL_NAME</code></td><td><code>gpt-4o-mini</code></td><td><code>gpt-4o</code> in prod</td></tr>
+  <tr><td><code>MODEL_NAME</code></td><td><code>gpt-4.1-mini</code></td><td><code>gpt-4.1</code> in prod</td></tr>
   <tr><td><code>MODEL_ENDPOINT</code></td><td><code>https://models.inference.ai.azure.com</code></td><td>GitHub Models API</td></tr>
   <tr><td><code>ENABLE_LLM</code></td><td><code>true</code></td><td>AI-enhanced analysis</td></tr>
   <tr><td><code>ENABLE_COST_API</code></td><td><code>true</code></td><td>Live Azure pricing</td></tr>

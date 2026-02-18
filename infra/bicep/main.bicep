@@ -29,7 +29,7 @@ param minReplicas int = 0
 param maxReplicas int = 3
 
 @description('LLM model name')
-param modelName string = 'gpt-4o-mini'
+param modelName string = 'gpt-4.1-mini'
 
 @description('Enable LLM analysis')
 param enableLlm bool = true

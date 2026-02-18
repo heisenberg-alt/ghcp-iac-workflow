@@ -35,7 +35,7 @@ A production-ready **GitHub Copilot Extension** that provides AI-powered Infrast
 | **IaC Analysis** | Security scanning, policy checking, compliance auditing (CIS, NIST, SOC2) for Terraform & Bicep |
 | **Cost Estimation** | Azure resource cost estimation with optimization recommendations |
 | **Infrastructure Ops** | Drift detection, environment promotion (dev → staging → prod), notifications |
-| **LLM Enhancement** | AI-powered analysis via GitHub Models (`gpt-4o` / `gpt-4o-mini`) |
+| **LLM Enhancement** | AI-powered analysis via GitHub Models (`gpt-4.1` / `gpt-4.1-mini`) |
 | **Blast Radius** | Risk-weighted impact analysis for infrastructure changes |
 | **Intent Router** | LLM + keyword scoring to classify user requests into analyze / cost / ops / status / help |
 
@@ -131,13 +131,13 @@ make build
 ### Run Locally
 
 ```bash
-# Start in dev mode (no webhook secret required, uses gpt-4o-mini)
+# Start in dev mode (no webhook secret required, uses gpt-4.1-mini)
 make dev
 # Server starts on http://localhost:8080
 
 # Verify it's running
 curl http://localhost:8080/health
-# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4o-mini","service":"ghcp-iac"}
+# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4.1-mini","service":"ghcp-iac"}
 ```
 
 ### Try It Out
@@ -184,7 +184,7 @@ All configuration is via environment variables. The server uses sensible default
 | `PORT` | `8080` | HTTP server port |
 | `ENVIRONMENT` | `dev` | Environment name: `dev`, `test`, or `prod` |
 | `GITHUB_WEBHOOK_SECRET` | — | HMAC secret for Copilot webhook signature verification. **Required in prod** — requests are rejected without it |
-| `MODEL_NAME` | `gpt-4o-mini` | GitHub Models LLM model. Auto-overridden to `gpt-4o` in prod |
+| `MODEL_NAME` | `gpt-4.1-mini` | GitHub Models LLM model. Auto-overridden to `gpt-4.1` in prod |
 | `MODEL_ENDPOINT` | `https://models.inference.ai.azure.com` | GitHub Models API endpoint |
 | `ENABLE_LLM` | `true` | Enable AI-enhanced analysis and intent routing |
 | `ENABLE_COST_API` | `true` | Enable live Azure Retail Prices API for cost estimation |
@@ -236,7 +236,7 @@ docker run -d \
   -p 8080:8080 \
   -e ENVIRONMENT=prod \
   -e GITHUB_WEBHOOK_SECRET=your-webhook-secret \
-  -e MODEL_NAME=gpt-4o \
+  -e MODEL_NAME=gpt-4.1 \
   ghcp-iac:latest
 
 # 3. Verify
@@ -297,7 +297,7 @@ terraform output container_app_fqdn
 | Memory | 0.5 Gi | 1 Gi | 2 Gi |
 | Min replicas | 0 | 1 | 2 |
 | Max replicas | 1 | 3 | 5 |
-| Model | gpt-4o-mini | gpt-4o-mini | gpt-4o |
+| Model | gpt-4.1-mini | gpt-4.1-mini | gpt-4.1 |
 
 ---
 

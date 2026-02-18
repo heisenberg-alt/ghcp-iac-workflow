@@ -34,7 +34,7 @@ docker build -t ghcp-iac .
 docker run -d -p 8080:8080 \
   -e ENVIRONMENT=prod \
   -e GITHUB_WEBHOOK_SECRET=<secret> \
-  -e MODEL_NAME=gpt-4o \
+  -e MODEL_NAME=gpt-4.1 \
   ghcp-iac:latest
 ```
 
@@ -167,7 +167,7 @@ Lists all capabilities with example prompts.
 | `PORT` | `8080` | Server port |
 | `ENVIRONMENT` | `dev` | `dev` / `test` / `prod` |
 | `GITHUB_WEBHOOK_SECRET` | — | Required in prod |
-| `MODEL_NAME` | `gpt-4o-mini` | `gpt-4o` in prod |
+| `MODEL_NAME` | `gpt-4.1-mini` | `gpt-4.1` in prod |
 | `MODEL_ENDPOINT` | `https://models.inference.ai.azure.com` | GitHub Models API |
 | `ENABLE_LLM` | `true` | AI-enhanced analysis |
 | `ENABLE_COST_API` | `true` | Live Azure pricing |

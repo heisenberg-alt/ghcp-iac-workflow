@@ -107,11 +107,11 @@ func (c *Config) IsDev() bool { return c.Environment == EnvDev }
 func modelForEnv(env Environment) string {
 	switch env {
 	case EnvProd:
-		return "gpt-4o"
+		return "gpt-4.1"
 	case EnvTest:
-		return "gpt-4o-mini"
+		return "gpt-4.1-mini"
 	default:
-		return "gpt-4o-mini"
+		return "gpt-4.1-mini"
 	}
 }
 
