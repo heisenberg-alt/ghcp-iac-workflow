@@ -1,6 +1,6 @@
 # GHCP IaC — GitHub Copilot Extension for IaC Governance
 
-A production-ready **GitHub Copilot Extension** that provides AI-powered Infrastructure as Code governance for Azure. It combines 17 deterministic policy, security, and compliance rules with LLM-enhanced analysis via [GitHub Models](https://docs.github.com/en/github-models).
+A production-ready **GitHub Copilot Extension** that provides AI-powered Infrastructure as Code governance for Azure. Built as a **multi-agent host** with 10 specialized agents, 12 deterministic analysis rules, and two transports (HTTP/SSE + MCP stdio). Powered by [GitHub Models](https://docs.github.com/en/github-models).
 
 ---
 
@@ -8,6 +8,7 @@ A production-ready **GitHub Copilot Extension** that provides AI-powered Infrast
 
 - [Features](#features)
 - [Architecture](#architecture)
+- [Agents](#agents)
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
@@ -23,7 +24,7 @@ A production-ready **GitHub Copilot Extension** that provides AI-powered Infrast
   - [Option D — CI/CD via GitHub Actions (recommended)](#option-d--cicd-via-github-actions-recommended)
 - [Register as a GitHub Copilot Extension](#register-as-a-github-copilot-extension)
 - [Analysis Rules](#analysis-rules)
-- [Copilot Extension SSE Protocol](#copilot-extension-sse-protocol)
+- [Transports & Protocols](#transports--protocols)
 - [License](#license)
 
 ---
@@ -32,44 +33,97 @@ A production-ready **GitHub Copilot Extension** that provides AI-powered Infrast
 
 | Capability | Description |
 |-----------|-------------|
-| **IaC Analysis** | Security scanning, policy checking, compliance auditing (CIS, NIST, SOC2) for Terraform & Bicep |
+| **Multi-Agent Architecture** | 10 specialized agents coordinated by an orchestrator with intent-based routing |
+| **IaC Analysis** | Policy, security, and compliance scanning (12 rules) for Terraform & Bicep |
 | **Cost Estimation** | Azure resource cost estimation with optimization recommendations |
 | **Infrastructure Ops** | Drift detection, environment promotion (dev → staging → prod), notifications |
 | **LLM Enhancement** | AI-powered analysis via GitHub Models (`gpt-4.1` / `gpt-4.1-mini`) |
 | **Blast Radius** | Risk-weighted impact analysis for infrastructure changes |
-| **Intent Router** | LLM + keyword scoring to classify user requests into analyze / cost / ops / status / help |
+| **Dual Transport** | HTTP/SSE for GitHub Copilot Chat + MCP stdio (JSON-RPC 2.0) for IDE integration |
 
 ## Architecture
 
-Single Go binary with 3 specialized analyzers and an LLM-powered intent router:
+Multi-agent host with an orchestrator that classifies intent and dispatches to specialized agents. Supports two transports: HTTP (SSE) for GitHub Copilot Chat and MCP stdio (JSON-RPC 2.0) for IDE tool integration.
 
 ```
-User → GitHub Copilot Chat → GHCP IaC Extension (POST /agent)
-                                     │
-                           ┌─────────┼─────────┐
-                           ▼         ▼         ▼
-                     IaC Analyzer  Cost Est.  Infra Ops
-                     (17 rules)    (Azure $)  (drift/deploy)
-                           │         │         │
-                           └─────────┼─────────┘
-                                     ▼
-                             GitHub Models (LLM)
+                        ┌─── HTTP/SSE ───┐    ┌── MCP stdio ──┐
+                        │ POST /agent     │    │ JSON-RPC 2.0  │
+                        │ POST /agent/{id}│    │ stdin/stdout  │
+                        └────────┬────────┘    └──────┬────────┘
+                                 │                    │
+                                 ▼                    ▼
+                         ┌──────────────────────────────┐
+                         │     Host  (Registry +        │
+                         │     Dispatcher + Enricher)    │
+                         └──────────────┬───────────────┘
+                                        ▼
+                         ┌──────────────────────────────┐
+                         │       Orchestrator Agent      │
+                         │   (intent classification)     │
+                         └──────────────┬───────────────┘
+                                        │
+          ┌──────────┬──────────┬───────┼───────┬──────────┬──────────┐
+          ▼          ▼          ▼       ▼       ▼          ▼          ▼
+       Policy    Security  Compliance  Cost   Drift     Deploy   Notification
+       (6 rules) (4 rules) (2 rules) (Azure$)(state)  (promote)  (Teams/Slack)
+                                                │
+                                          ┌─────┴─────┐
+                                          ▼           ▼
+                                       Impact      Module
+                                    (blast radius) (registry)
 ```
 
-**Endpoints:**
+**HTTP Endpoints:**
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/agent` | Main Copilot Extension endpoint (SSE response) |
-| `GET` | `/health` | Health check — returns JSON with status, environment, model info |
+| `POST` | `/agent` | Orchestrator endpoint — classifies intent and routes to agents (SSE) |
+| `POST` | `/agent/{id}` | Direct agent endpoint — invoke a specific agent by ID (SSE) |
+| `GET`  | `/agents` | List all registered agents (JSON) |
+| `GET`  | `/health` | Health check — returns status, version, environment, agent count |
+
+## Agents
+
+The orchestrator classifies each request and dispatches to the appropriate agents:
+
+| Agent | ID | Trigger Intents | Description |
+|-------|----|-----------------|-------------|
+| **Policy** | `policy` | analyze | 6 deterministic rules (HTTPS, RBAC, TLS, blob access, soft-delete, purge protection) |
+| **Security** | `security` | analyze | 4 rules (hardcoded secrets, public access, encryption, NSG) |
+| **Compliance** | `compliance` | analyze | 2 rules (NIST-SC7 network boundaries, NIST-SC28 encryption at rest) |
+| **Impact** | `impact` | analyze | Blast radius and risk-weighted change analysis |
+| **Cost** | `cost` | cost | Azure resource cost estimation via Retail Prices API |
+| **Drift** | `drift` | ops | Infrastructure state drift detection |
+| **Deploy** | `deploy` | ops | Environment promotion (dev → staging → prod) |
+| **Notification** | `notification` | ops | Teams/Slack webhook notifications |
+| **Module** | `module` | help | Terraform module registry lookups |
+| **Orchestrator** | `orchestrator` | (default) | Intent classification + multi-agent coordination |
 
 ## Project Structure
 
 ```
 ghcp-iac-workflow/
-├── cmd/server/              # Entry point (main.go)
+├── cmd/
+│   ├── agent-host/          # New entry point — multi-agent host (HTTP + MCP stdio)
+│   └── server/              # Legacy entry point (single-router architecture)
+├── agents/                  # Specialized agent packages
+│   ├── policy/              # Policy analysis agent (6 rules)
+│   ├── security/            # Security scanning agent (4 rules)
+│   ├── compliance/          # Compliance auditing agent (NIST)
+│   ├── cost/                # Cost estimation agent
+│   ├── drift/               # Drift detection agent
+│   ├── deploy/              # Deployment promotion agent
+│   ├── notification/        # Teams/Slack notification agent
+│   ├── impact/              # Blast radius analysis agent
+│   ├── module/              # Terraform module registry agent
+│   └── orchestrator/        # Intent classification + multi-agent coordination
 ├── internal/
-│   ├── analyzer/            # IaC analysis engine (17 rules: policy, security, compliance)
+│   ├── protocol/            # Agent interface, Emitter interface, shared types
+│   ├── host/                # Agent registry, dispatcher, request enrichment
+│   ├── transport/
+│   │   ├── http/            # SSE emitter adapter for HTTP transport
+│   │   └── mcpstdio/        # MCP stdio adapter (JSON-RPC 2.0 over stdin/stdout)
+│   ├── analyzer/            # IaC analysis engine (12 rules: policy, security, compliance)
 │   ├── auth/                # HMAC-SHA256 webhook signature verification
 │   ├── config/              # Environment-based configuration loader
 │   ├── costestimator/       # Azure cost estimation + Azure Retail Prices API
@@ -77,7 +131,8 @@ ghcp-iac-workflow/
 │   ├── llm/                 # GitHub Models API client (streaming + non-streaming)
 │   ├── parser/              # Terraform HCL & Bicep parser
 │   ├── router/              # LLM-powered intent classification with keyword fallback
-│   └── server/              # HTTP server, SSE writer, middleware (panic recovery, logging)
+│   ├── server/              # HTTP server, SSE writer, middleware
+│   └── testkit/             # Test fixtures and characterization tests
 ├── infra/
 │   ├── terraform/           # Azure Container Apps — Terraform modules + env tfvars
 │   │   ├── main.tf, variables.tf, resources.tf, outputs.tf
@@ -85,11 +140,6 @@ ghcp-iac-workflow/
 │   └── bicep/               # Azure Container Apps — Bicep module + env params
 │       ├── main.bicep
 │       └── envs/            # dev.bicepparam, test.bicepparam, prod.bicepparam
-├── .github/workflows/       # CI/CD pipelines
-│   ├── ci.yml               # Lint → Test → Build → Docker image
-│   ├── deploy-dev.yml       # Auto-deploy on push to develop
-│   ├── deploy-test.yml      # Auto-promote after dev, runs smoke tests
-│   └── deploy-prod.yml      # Manual approval gate, deploy on GitHub Release
 ├── Dockerfile               # Multi-stage build (golang:1.22-alpine → alpine:3.19)
 ├── docker-compose.yml       # Local development with all env vars
 ├── Makefile                 # Build automation (build, test, lint, dev, docker, clean)
@@ -120,24 +170,30 @@ cd ghcp-iac-workflow
 # Download dependencies
 go mod download
 
-# Build the server binary
+# Build the agent-host binary
 make build-server
 # Output: bin/ghcp-iac-server
 
-# Or build everything (server + CLI)
+# Or build everything (agent-host + CLI)
 make build
 ```
 
 ### Run Locally
 
 ```bash
-# Start in dev mode (no webhook secret required, uses gpt-4.1-mini)
+# Start in HTTP mode (SSE transport for GitHub Copilot Chat)
 make dev
-# Server starts on http://localhost:8080
+# Agent host starts on http://localhost:8080 with 10 agents registered
 
-# Verify it's running
+# Start in MCP stdio mode (JSON-RPC 2.0 for IDE integration)
+make dev-mcp
+
+# Verify it's running (HTTP mode)
 curl http://localhost:8080/health
-# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4.1-mini","service":"ghcp-iac"}
+# {"status":"ok","service":"ghcp-iac-agent-host","version":"dev","environment":"dev","agents":10}
+
+# List registered agents
+curl http://localhost:8080/agents
 ```
 
 ### Try It Out
@@ -202,8 +258,11 @@ All configuration is via environment variables. The server uses sensible default
 ## Testing
 
 ```bash
-# Run all unit tests (79 tests across 6 packages)
+# Run all tests (175 tests across 20 packages)
 make test
+
+# Run only agent tests
+make test-agents
 
 # Run with coverage report
 make test-cover
@@ -430,6 +489,8 @@ After deploying the server to a public URL, register it as a Copilot Extension:
 
 ## Analysis Rules
 
+12 deterministic rules organized by category:
+
 ### Policy (6 rules)
 | Rule | Check |
 |------|-------|
@@ -440,30 +501,27 @@ After deploying the server to a public URL, register it as a Copilot Extension:
 | POL-005 | Key Vault soft delete enabled |
 | POL-006 | Key Vault purge protection enabled |
 
-### Security (5 rules)
+### Security (4 rules)
 | Rule | Check |
 |------|-------|
 | SEC-001 | Hardcoded secrets detection (API keys, passwords, connection strings) |
 | SEC-002 | Public network access disabled |
-| SEC-003 | HTTPS traffic enforcement |
 | SEC-004 | Encryption at rest (customer-managed keys) |
 | SEC-005 | Overly permissive NSG rules (0.0.0.0/0) |
 
-### Compliance (6 rules)
+### Compliance (2 rules)
 | Rule | Framework | Check |
 |------|-----------|-------|
-| CIS-4.1 | CIS Azure | Storage HTTPS |
-| CIS-8.1 | CIS Azure | Key Vault recovery |
 | NIST-SC7 | NIST 800-53 | Network boundary protection |
 | NIST-SC28 | NIST 800-53 | Infrastructure encryption at rest |
-| SOC2-CC6.1 | SOC 2 | Logical access controls (no public blob) |
-| SOC2-CC6.6 | SOC 2 | Encryption in transit (TLS 1.2) |
 
 ---
 
-## Copilot Extension SSE Protocol
+## Transports & Protocols
 
-The `/agent` endpoint responds with [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) following the GitHub Copilot Extension protocol:
+### HTTP/SSE (GitHub Copilot Chat)
+
+The `/agent` and `/agent/{id}` endpoints respond with [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) following the GitHub Copilot Extension protocol:
 
 ```
 event: copilot_message
@@ -481,15 +539,37 @@ data: {}
 
 Messages are streamed incrementally — each `copilot_message` event contains a chunk of the response. The stream ends with `copilot_done`.
 
+### MCP stdio (JSON-RPC 2.0)
+
+For IDE integration, the agent host supports the [Model Context Protocol](https://modelcontextprotocol.io/) over stdin/stdout:
+
+```bash
+# Start in MCP mode
+./bin/ghcp-iac-server --transport=stdio
+```
+
+Supported JSON-RPC methods:
+
+| Method | Description |
+|--------|-------------|
+| `initialize` | Returns protocol version and server capabilities |
+| `tools/list` | Lists all registered agents as MCP tools |
+| `tools/call` | Invokes an agent by name with the given arguments |
+
 ---
 
 ## Makefile Reference
 
 ```bash
-make build          # Build server + CLI binaries
-make build-server   # Build server binary only
-make dev            # Run server locally (go run)
-make test           # Unit tests with race detector
+make build          # Build agent-host + CLI binaries
+make build-server   # Build agent-host binary only
+make build-cli      # Build CLI binary only
+make build-legacy   # Build legacy server (cmd/server)
+make dev            # Run agent-host locally (HTTP mode)
+make dev-mcp        # Run agent-host locally (MCP stdio mode)
+make dev-legacy     # Run legacy server
+make test           # All tests with race detector (175 tests, 20 packages)
+make test-agents    # Agent package tests only
 make test-cover     # Tests + coverage report
 make test-cover-html # Tests + open HTML coverage in browser
 make vet            # go vet
