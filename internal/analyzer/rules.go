@@ -85,6 +85,17 @@ func AllRules() []Rule {
 	return rules
 }
 
+// RulesByCategory returns rules matching the given category (e.g. "Policy", "Security", "Compliance").
+func RulesByCategory(category string) []Rule {
+	var filtered []Rule
+	for _, r := range AllRules() {
+		if r.Category == category {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
+}
+
 func policyRules() []Rule {
 	return []Rule{
 		{

@@ -1,0 +1,1 @@
+Can you help me set up a new Azure environment? I need a storage account, a virtual machine, and a key vault for my application.

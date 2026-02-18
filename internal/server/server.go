@@ -76,6 +76,11 @@ func (s *Server) setupRoutes() {
 	s.mux.HandleFunc("/", s.withMiddleware(s.handleAgent))
 }
 
+// ServeHTTP implements http.Handler, delegating to the internal mux.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
+}
+
 // Run starts the server with graceful shutdown.
 func (s *Server) Run() error {
 	addr := ":" + s.config.Port
