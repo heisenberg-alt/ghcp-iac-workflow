@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docs — ghcp-iac</title>
+  <meta name="description" content="Documentation for ghcp-iac: deployment, configuration, analysis rules, API reference, and CI/CD setup.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="index.html" class="logo"><span>&gt;</span> ghcp-iac</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="docs.html" class="active">Docs</a></li>
+      <li><a href="https://github.com/heisenberg-alt/ghcp-iac-workflow">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+<div class="docs-layout">
+
+<aside class="docs-sidebar">
+  <h4>Getting Started</h4>
+  <ul>
+    <li><a href="#prerequisites">Prerequisites</a></li>
+    <li><a href="#run-locally">Run Locally</a></li>
+    <li><a href="#try-it">Try It Out</a></li>
+  </ul>
+  <h4 style="margin-top:20px">Deploy</h4>
+  <ul>
+    <li><a href="#docker">Docker</a></li>
+    <li><a href="#terraform">Terraform</a></li>
+    <li><a href="#bicep">Bicep</a></li>
+    <li><a href="#cicd">CI/CD Pipeline</a></li>
+  </ul>
+  <h4 style="margin-top:20px">Reference</h4>
+  <ul>
+    <li><a href="#config">Configuration</a></li>
+    <li><a href="#api">API Endpoints</a></li>
+    <li><a href="#rules">Analysis Rules</a></li>
+    <li><a href="#sse">SSE Protocol</a></li>
+    <li><a href="#agent-workflow">Agent Workflow</a></li>
+    <li><a href="#makefile">Makefile</a></li>
+  </ul>
+</aside>
+
+<main class="docs-content">
+
+<h1>Documentation</h1>
+<p class="subtitle">Everything you need to deploy, configure, and use ghcp-iac.</p>
+
+<!-- ============================================ -->
+<h2 id="prerequisites">Prerequisites</h2>
+
+<table>
+  <tr><th>Tool</th><th>Version</th><th>Required</th></tr>
+  <tr><td>Go</td><td>1.22+</td><td>Yes</td></tr>
+  <tr><td>Docker</td><td>20+</td><td>For containerized runs</td></tr>
+  <tr><td>Terraform</td><td>1.5+</td><td>For Azure deployment</td></tr>
+  <tr><td>Azure CLI</td><td>2.50+</td><td>For Azure deployment</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="run-locally">Run Locally</h2>
+
+<pre><code>git clone https://github.com/heisenberg-alt/ghcp-iac-workflow.git
+cd ghcp-iac-workflow
+go mod download
+make dev
+# → http://localhost:8080</code></pre>
+
+<pre><code>curl http://localhost:8080/health
+# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4o-mini"}</code></pre>
+
+<!-- ============================================ -->
+<h2 id="try-it">Try It Out</h2>
+
+<p>Send a Terraform snippet for analysis:</p>
+<pre><code>curl -s -X POST http://localhost:8080/agent \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [{
+      "role": "user",
+      "content": "Analyze this:\n```hcl\nresource \"azurerm_storage_account\" \"ex\" {\n  enable_https_traffic_only = false\n  min_tls_version = \"TLS1_0\"\n}\n```"
+    }]
+  }'</code></pre>
+
+<p>Other prompts:</p>
+<table>
+  <tr><th>Intent</th><th>Example</th></tr>
+  <tr><td>Analyze</td><td><code>"scan this terraform for security issues"</code></td></tr>
+  <tr><td>Cost</td><td><code>"estimate cost for a Standard_D4s_v3 VM"</code></td></tr>
+  <tr><td>Ops</td><td><code>"deploy to staging"</code> / <code>"check for drift"</code></td></tr>
+  <tr><td>Status</td><td><code>"status"</code></td></tr>
+  <tr><td>Help</td><td><code>"what can you do?"</code></td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="docker">Deploy: Docker</h2>
+
+<pre><code>docker build -t ghcp-iac .
+
+docker run -d -p 8080:8080 \
+  -e ENVIRONMENT=prod \
+  -e GITHUB_WEBHOOK_SECRET=&lt;secret&gt; \
+  -e MODEL_NAME=gpt-4o \
+  ghcp-iac:latest</code></pre>
+
+<p>Or with docker-compose:</p>
+<pre><code>docker-compose up -d</code></pre>
+
+<div class="callout ok">
+  The Docker image is a two-stage build: <code>golang:1.22-alpine</code> → <code>alpine:3.19</code> (~7 MB). Runs as non-root with a built-in healthcheck.
+</div>
+
+<!-- ============================================ -->
+<h2 id="terraform">Deploy: Terraform</h2>
+
+<p>Provisions Resource Group, Log Analytics, ACR, Container App Environment, and Container App on Azure.</p>
+
+<pre><code>cd infra/terraform
+terraform init
+terraform plan -var-file=envs/dev.tfvars
+terraform apply -var-file=envs/dev.tfvars
+terraform output container_app_fqdn</code></pre>
+
+<table>
+  <tr><th>Setting</th><th>Dev</th><th>Test</th><th>Prod</th></tr>
+  <tr><td>CPU</td><td>0.25</td><td>0.5</td><td>1.0</td></tr>
+  <tr><td>Memory</td><td>0.5 Gi</td><td>1 Gi</td><td>2 Gi</td></tr>
+  <tr><td>Min replicas</td><td>0</td><td>1</td><td>2</td></tr>
+  <tr><td>Max replicas</td><td>1</td><td>3</td><td>5</td></tr>
+  <tr><td>Model</td><td>gpt-4o-mini</td><td>gpt-4o-mini</td><td>gpt-4o</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="bicep">Deploy: Bicep</h2>
+
+<pre><code>az group create --name rg-ghcp-iac-dev --location eastus
+
+az deployment group create \
+  --resource-group rg-ghcp-iac-dev \
+  --template-file infra/bicep/main.bicep \
+  --parameters infra/bicep/envs/dev.bicepparam</code></pre>
+
+<!-- ============================================ -->
+<h2 id="cicd">Deploy: CI/CD Pipeline</h2>
+
+<p>Four GitHub Actions workflows form a promotion pipeline:</p>
+
+<pre><code>CI (lint/test/build/docker)
+  → Deploy Dev (push to develop)
+    → Deploy Test (auto + smoke tests)
+      → Deploy Prod (GitHub Release + approval gate)</code></pre>
+
+<h3>1. Set GitHub Secrets</h3>
+<p>Go to <strong>Settings → Secrets → Actions</strong>:</p>
+<table>
+  <tr><th>Secret</th><th>Purpose</th></tr>
+  <tr><td><code>AZURE_CLIENT_ID</code></td><td>Service principal app ID</td></tr>
+  <tr><td><code>AZURE_TENANT_ID</code></td><td>Azure AD tenant</td></tr>
+  <tr><td><code>AZURE_SUBSCRIPTION_ID</code></td><td>Subscription ID</td></tr>
+  <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>Copilot webhook verification</td></tr>
+</table>
+
+<h3>2. Create GitHub Environments</h3>
+<table>
+  <tr><th>Environment</th><th>Protection</th></tr>
+  <tr><td><code>dev</code></td><td>None — auto-deploy on push to <code>develop</code></td></tr>
+  <tr><td><code>test</code></td><td>None — auto after dev succeeds</td></tr>
+  <tr><td><code>production</code></td><td>Required reviewers</td></tr>
+</table>
+
+<h3>3. Deploy</h3>
+<pre><code># Dev — push to develop
+git checkout -b develop && git push origin develop
+
+# Prod — create a release
+gh release create v1.0.0 --title "v1.0.0"
+# Then approve in GitHub Actions UI</code></pre>
+
+<!-- ============================================ -->
+<h2 id="config">Configuration</h2>
+
+<p>All via environment variables. Sensible defaults for local dev.</p>
+
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Notes</th></tr>
+  <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Server port</td></tr>
+  <tr><td><code>ENVIRONMENT</code></td><td><code>dev</code></td><td><code>dev</code> / <code>test</code> / <code>prod</code></td></tr>
+  <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>—</td><td>Required in prod</td></tr>
+  <tr><td><code>MODEL_NAME</code></td><td><code>gpt-4o-mini</code></td><td><code>gpt-4o</code> in prod</td></tr>
+  <tr><td><code>MODEL_ENDPOINT</code></td><td><code>https://models.inference.ai.azure.com</code></td><td>GitHub Models API</td></tr>
+  <tr><td><code>ENABLE_LLM</code></td><td><code>true</code></td><td>AI-enhanced analysis</td></tr>
+  <tr><td><code>ENABLE_COST_API</code></td><td><code>true</code></td><td>Live Azure pricing</td></tr>
+  <tr><td><code>ENABLE_NOTIFICATIONS</code></td><td><code>false</code></td><td>Teams/Slack webhooks</td></tr>
+  <tr><td><code>TEAMS_WEBHOOK_URL</code></td><td>—</td><td>Teams incoming webhook</td></tr>
+  <tr><td><code>SLACK_WEBHOOK_URL</code></td><td>—</td><td>Slack incoming webhook</td></tr>
+  <tr><td><code>AZURE_SUBSCRIPTION_ID</code></td><td>—</td><td>For cost API / drift</td></tr>
+  <tr><td><code>AZURE_TENANT_ID</code></td><td>—</td><td>Azure AD tenant</td></tr>
+  <tr><td><code>AZURE_CLIENT_ID</code></td><td>—</td><td>Service principal</td></tr>
+  <tr><td><code>AZURE_CLIENT_SECRET</code></td><td>—</td><td>Service principal secret</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="api">API Endpoints</h2>
+
+<table>
+  <tr><th>Method</th><th>Path</th><th>Description</th></tr>
+  <tr><td><code>POST</code></td><td><code>/agent</code></td><td>Copilot Extension endpoint — SSE stream response</td></tr>
+  <tr><td><code>GET</code></td><td><code>/health</code></td><td>Health check — JSON with status, env, model info</td></tr>
+</table>
+
+<h3>Register as Copilot Extension</h3>
+<ol>
+  <li>GitHub → Settings → Developer settings → GitHub Apps → New</li>
+  <li>Webhook URL: <code>https://&lt;your-fqdn&gt;/agent</code></li>
+  <li>Webhook secret: same as <code>GITHUB_WEBHOOK_SECRET</code></li>
+  <li>Enable Copilot Chat: Read & Write</li>
+  <li>Set Agent URL to <code>https://&lt;your-fqdn&gt;/agent</code></li>
+  <li>Install on your org/repos</li>
+  <li>Invoke: <code>@ghcp-iac &lt;your request&gt;</code></li>
+</ol>
+
+<!-- ============================================ -->
+<h2 id="rules">Analysis Rules</h2>
+
+<h3>Policy (6 rules)</h3>
+<table>
+  <tr><th>Rule</th><th>Severity</th><th>Check</th></tr>
+  <tr><td><code>POL-001</code></td><td>High</td><td>Storage HTTPS enforcement (CIS 4.1)</td></tr>
+  <tr><td><code>POL-002</code></td><td>High</td><td>AKS RBAC enabled</td></tr>
+  <tr><td><code>POL-003</code></td><td>Medium</td><td>TLS 1.2 minimum (SOC2 CC6.6)</td></tr>
+  <tr><td><code>POL-004</code></td><td>High</td><td>No public blob access (SOC2 CC6.1)</td></tr>
+  <tr><td><code>POL-005</code></td><td>High</td><td>Key Vault soft delete (CIS 8.1)</td></tr>
+  <tr><td><code>POL-006</code></td><td>Medium</td><td>Key Vault purge protection</td></tr>
+</table>
+
+<h3>Security (4 rules)</h3>
+<table>
+  <tr><th>Rule</th><th>Severity</th><th>Check</th></tr>
+  <tr><td><code>SEC-001</code></td><td>Critical</td><td>Hardcoded secrets (passwords, API keys, connection strings)</td></tr>
+  <tr><td><code>SEC-002</code></td><td>High</td><td>Public network access disabled</td></tr>
+  <tr><td><code>SEC-004</code></td><td>Medium</td><td>Customer-managed encryption keys</td></tr>
+  <tr><td><code>SEC-005</code></td><td>High</td><td>Overly permissive NSG rules</td></tr>
+</table>
+
+<h3>Compliance (2 rules)</h3>
+<table>
+  <tr><th>Rule</th><th>Framework</th><th>Severity</th><th>Check</th></tr>
+  <tr><td><code>NIST-SC7</code></td><td>NIST 800-53</td><td>High</td><td>Network boundary protection (default deny)</td></tr>
+  <tr><td><code>NIST-SC28</code></td><td>NIST 800-53</td><td>Medium</td><td>Infrastructure encryption at rest</td></tr>
+</table>
+
+<div class="callout">
+  CIS and SOC2 checks are consolidated into the Policy rules (POL-001 through POL-005) with framework references in the descriptions.
+</div>
+
+<!-- ============================================ -->
+<h2 id="sse">SSE Protocol</h2>
+
+<p>The <code>/agent</code> endpoint responds with Server-Sent Events following the GitHub Copilot Extension protocol:</p>
+
+<pre><code>event: copilot_message
+data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"..."}}]}
+
+event: copilot_references
+data: [{"title":"CIS Azure Benchmark","url":"https://..."}]
+
+event: copilot_confirmation
+data: {"title":"Deploy?","message":"Ready to promote to staging"}
+
+event: copilot_done
+data: {}</code></pre>
+
+<p>Messages stream incrementally. Each <code>copilot_message</code> carries a content chunk. The stream ends with <code>copilot_done</code>.</p>
+
+<!-- ============================================ -->
+<h2 id="agent-workflow">GitHub Copilot Agent Workflow</h2>
+
+<p>This project uses <code>.github/agents/</code> to define custom Copilot agents that run in the repo context.</p>
+
+<h3>Agent: <code>test</code></h3>
+<p>Defined in <code>.github/agents/test.agent.md</code>. Runs unit tests, build verification, lint checks, and server smoke tests.</p>
+
+<pre><code># Invoke in Copilot Chat:
+@test run the full test suite
+@test verify the analysis rules work
+@test smoke test the server</code></pre>
+
+<h3>Creating New Agents</h3>
+<p>Add a <code>.agent.md</code> file in <code>.github/agents/</code>:</p>
+
+<pre><code>---
+description: What the agent does
+name: agent-name
+tools: ['shell', 'read', 'search', 'edit']
+---
+
+# Instructions for the agent</code></pre>
+
+<table>
+  <tr><th>Field</th><th>Purpose</th></tr>
+  <tr><td><code>name</code></td><td>Identifier to invoke the agent</td></tr>
+  <tr><td><code>description</code></td><td>Copilot uses this for routing</td></tr>
+  <tr><td><code>tools</code></td><td>Permitted tools: shell, read, search, edit, task, web_search, etc.</td></tr>
+  <tr><td>Body</td><td>Detailed instructions the agent follows</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="makefile">Makefile</h2>
+
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><code>make build</code></td><td>Build server + CLI binaries</td></tr>
+  <tr><td><code>make build-server</code></td><td>Build server only</td></tr>
+  <tr><td><code>make dev</code></td><td>Run locally (<code>go run</code>)</td></tr>
+  <tr><td><code>make test</code></td><td>Unit tests with race detector</td></tr>
+  <tr><td><code>make test-cover</code></td><td>Tests + coverage report</td></tr>
+  <tr><td><code>make docker</code></td><td>Build Docker image</td></tr>
+  <tr><td><code>make lint</code></td><td>Run golangci-lint</td></tr>
+  <tr><td><code>make fmt</code></td><td>Format all Go files</td></tr>
+  <tr><td><code>make clean</code></td><td>Remove build artifacts</td></tr>
+</table>
+
+</main>
+</div>
+</div>
+
+<footer>
+  <div class="container">
+    <p>ghcp-iac &middot; <a href="https://github.com/heisenberg-alt/ghcp-iac-workflow">source</a> &middot; <a href="index.html">home</a> &middot; MIT License</p>
+  </div>
+</footer>
+
+</body>
+</html>

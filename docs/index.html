@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ghcp-iac — AI-Powered IaC Governance</title>
+  <meta name="description" content="GitHub Copilot Extension for AI-powered Infrastructure as Code governance. Terraform & Bicep security, compliance, and cost analysis for Azure.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="logo"><span>&gt;</span> ghcp-iac</a>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#quickstart">Quick Start</a></li>
+      <li><a href="docs.html">Docs</a></li>
+      <li><a href="https://github.com/heisenberg-alt/ghcp-iac-workflow">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <h1><span>&gt;</span> ghcp-iac</h1>
+    <p class="tagline">
+      GitHub Copilot Extension for AI-powered Infrastructure as Code governance.
+      Security, compliance, and cost analysis for Terraform & Bicep on Azure.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot r"></div>
+        <div class="terminal-dot y"></div>
+        <div class="terminal-dot g"></div>
+        <span>zsh — ghcp-iac</span>
+      </div>
+      <div class="terminal-body">
+        <div><span class="prompt">$</span> <span class="cmd">curl</span> <span class="flag">-s</span> localhost:8080/health | jq .</div>
+        <div><span class="output">{</span></div>
+        <div><span class="output">&nbsp;&nbsp;"status": "healthy",</span></div>
+        <div><span class="output">&nbsp;&nbsp;"llm_enabled": true,</span></div>
+        <div><span class="output">&nbsp;&nbsp;"model": "gpt-4o-mini"</span></div>
+        <div><span class="output">}</span></div>
+        <br>
+        <div><span class="comment"># In Copilot Chat:</span></div>
+        <div><span class="prompt">@ghcp-iac</span> <span class="cmd">analyze this terraform for security issues</span></div>
+        <br>
+        <div><span class="output">▸ Detected Terraform code</span></div>
+        <div><span class="output">▸ Found 3 resource(s) to analyze</span></div>
+        <div><span class="output">▸ <span class="sev sev-crit"></span> SEC-001 — Hardcoded secrets detected</span></div>
+        <div><span class="output">▸ <span class="sev sev-high"></span> POL-001 — HTTPS not enforced</span></div>
+        <div><span class="output">▸ <span class="sev sev-med"></span> NIST-SC7 — No network rules configured</span></div>
+        <div><span class="output">▸ Blast radius: 14 (High)</span></div>
+        <div class="cursor"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="stats">
+    <div class="stat"><span class="num">12</span><span class="label">Analysis Rules</span></div>
+    <div class="stat"><span class="num">3</span><span class="label">Rule Categories</span></div>
+    <div class="stat"><span class="num">2</span><span class="label">IaC Languages</span></div>
+    <div class="stat"><span class="num">1</span><span class="label">Binary, Zero Config</span></div>
+  </div>
+</section>
+
+<section class="features" id="features">
+  <div class="container">
+    <h2>Capabilities</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="icon">🔍</span>
+        <h3>IaC Analysis</h3>
+        <p>12 deterministic rules covering Policy, Security, and Compliance (CIS, NIST, SOC2). Pattern-based secret detection, property validation, and blast radius scoring.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">💰</span>
+        <h3>Cost Estimation</h3>
+        <p>Per-resource monthly cost breakdown using Azure Retail Prices API. Static price tables for offline use. AI-powered optimization suggestions.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🚀</span>
+        <h3>Infrastructure Ops</h3>
+        <p>Drift detection against declared state. Environment promotion (dev → staging → prod). Teams and Slack notification integration.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🤖</span>
+        <h3>LLM Enhancement</h3>
+        <p>GitHub Models integration (gpt-4o / gpt-4o-mini). AI-powered intent classification, enhanced analysis, and cost optimization recommendations.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📊</span>
+        <h3>Blast Radius</h3>
+        <p>Risk-weighted impact scoring for every resource. Quantified change risk from Low to Critical. Per-resource weights by service type.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🔌</span>
+        <h3>Native Integration</h3>
+        <p>Runs as a GitHub Copilot Extension. SSE streaming protocol. Webhook signature verification. Works directly in your editor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="quickstart" id="quickstart">
+  <div class="container">
+    <h2>Quick Start</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <p>Clone and build</p>
+          <code>git clone https://github.com/heisenberg-alt/ghcp-iac-workflow.git && cd ghcp-iac-workflow && make build-server</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <p>Run locally</p>
+          <code>make dev</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <p>Verify</p>
+          <code>curl http://localhost:8080/health</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <p>Analyze some IaC</p>
+          <code>curl -X POST localhost:8080/agent -H "Content-Type: application/json" -d '{"messages":[{"role":"user","content":"analyze: ```hcl\nresource \"azurerm_storage_account\" \"ex\" { enable_https_traffic_only = false }\n```"}]}'</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container">
+    <a href="docs.html" class="cta-btn">> read the docs</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>ghcp-iac &middot; <a href="https://github.com/heisenberg-alt/ghcp-iac-workflow">source</a> &middot; <a href="docs.html">docs</a> &middot; MIT License</p>
+  </div>
+</footer>
+
+<style>
+  .cursor::after {
+    content: '█';
+    color: var(--green);
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+
+</body>
+</html>
