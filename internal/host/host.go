@@ -49,7 +49,8 @@ func (r *Registry) List() []protocol.AgentMetadata {
 
 // Dispatcher routes requests to agents via the registry.
 type Dispatcher struct {
-	registry *Registry
+	registry  *Registry
+	defaultID string
 }
 
 // NewDispatcher creates a new Dispatcher.
@@ -57,8 +58,20 @@ func NewDispatcher(registry *Registry) *Dispatcher {
 	return &Dispatcher{registry: registry}
 }
 
+// SetDefault sets the default agent ID used when no specific ID is provided.
+func (d *Dispatcher) SetDefault(id string) {
+	d.defaultID = id
+}
+
 // Dispatch looks up the agent by ID and calls its Handle method.
+// If agentID is empty, the default agent is used.
 func (d *Dispatcher) Dispatch(ctx context.Context, agentID string, req protocol.AgentRequest, emit protocol.Emitter) error {
+	if agentID == "" {
+		agentID = d.defaultID
+	}
+	if agentID == "" {
+		return fmt.Errorf("no agent ID specified and no default configured")
+	}
 	agent, ok := d.registry.Get(agentID)
 	if !ok {
 		return fmt.Errorf("agent %q not found", agentID)
