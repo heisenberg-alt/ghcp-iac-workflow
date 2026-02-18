@@ -201,3 +201,86 @@ make test-cover     # Tests + coverage
 make docker         # Build Docker image
 make clean          # Remove artifacts
 ```
+
+---
+
+## GitHub Copilot Agent Workflow
+
+This project uses **GitHub Copilot agent workflow** (`.github/agents/`) — a feature that lets you define custom AI agents that run directly in your repository via Copilot. These agents can read code, run commands, make edits, and execute tasks autonomously within the repo context.
+
+### How It Works
+
+Agent definitions live in `.github/agents/` as Markdown files with YAML frontmatter:
+
+```
+.github/
+  agents/
+    test.agent.md     # Test & validation agent
+```
+
+Each `.agent.md` file defines:
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Agent identifier (used to invoke it) |
+| `description` | What the agent does — Copilot uses this for routing |
+| `tools` | Permitted tools: `shell`, `read`, `search`, `edit`, `task`, `skill`, `web_search`, `web_fetch`, `ask_user` |
+| Body (Markdown) | Detailed instructions, context, and examples the agent follows |
+
+### Available Agents
+
+#### `test` — Test & Validation Agent
+
+**File:** `.github/agents/test.agent.md`
+
+Runs the full test and validation suite for the ghcp-iac extension:
+
+- **Unit tests** — `go test ./... -v -race`
+- **Build verification** — `go build ./...`
+- **Lint checks** — `go vet` + `gofmt`
+- **Server smoke test** — Starts the server, hits `/health`, sends a sample Terraform analysis request to `/agent`
+- **Rule validation** — Verifies known-insecure IaC triggers the expected findings
+
+**Invoke in Copilot Chat:**
+
+```
+@test run the full test suite
+@test verify the analysis rules work correctly
+@test smoke test the server
+```
+
+### Creating New Agents
+
+To add a new agent, create a `.agent.md` file in `.github/agents/`:
+
+```markdown
+---
+description: <what the agent does — be specific>
+name: <agent-name>
+tools: ['shell', 'read', 'search', 'edit']
+---
+
+# Instructions
+
+<Detailed instructions for the agent>
+```
+
+**Example agents you could add:**
+
+| Agent | Purpose |
+|-------|---------|
+| `review` | Code review agent — runs linters, checks for security issues, validates rule coverage |
+| `deploy` | Deployment agent — builds Docker image, runs smoke tests, triggers deploy workflows |
+| `docs` | Documentation agent — keeps README, GUIDE, and inline docs in sync with code changes |
+
+### Agent vs. Copilot Extension
+
+| | Agent Workflow (`.github/agents/`) | Copilot Extension (`/agent` endpoint) |
+|---|---|---|
+| **Runs where** | In the repo via GitHub Copilot | On your deployed server |
+| **Access** | Repo code, shell, file editing | User's chat messages + references |
+| **Use case** | Dev workflow automation (test, review, deploy) | End-user IaC governance (analyze, cost, ops) |
+| **Auth** | GitHub permissions | X-GitHub-Token + webhook signature |
+| **Invoke** | `@agent-name <prompt>` in repo | `@ghcp-iac <prompt>` in Copilot Chat |
+
+Both work together: the **agent workflow** handles development tasks (testing, reviewing, deploying), while the **Copilot Extension** serves end users with IaC analysis, cost estimation, and infrastructure ops.
