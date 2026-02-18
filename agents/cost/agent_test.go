@@ -7,17 +7,9 @@ import (
 
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/host"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol/prototest"
 )
 
-type recorder struct {
-	messages []string
-}
-
-func (r *recorder) SendMessage(content string)               { r.messages = append(r.messages, content) }
-func (r *recorder) SendReferences(_ []protocol.Reference)    {}
-func (r *recorder) SendConfirmation(_ protocol.Confirmation) {}
-func (r *recorder) SendError(msg string)                     { r.messages = append(r.messages, msg) }
-func (r *recorder) SendDone()                                {}
 
 func TestAgent_ID(t *testing.T) {
 	a := New()
@@ -41,12 +33,12 @@ func TestAgent_StorageCost(t *testing.T) {
 		},
 	}
 	host.ParseAndEnrich(&req)
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "$") {
 		t.Error("expected cost output with dollar sign")
 	}
@@ -74,12 +66,12 @@ func TestAgent_AKSCost(t *testing.T) {
 		},
 	}
 	host.ParseAndEnrich(&req)
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "Monthly Cost") {
 		t.Error("expected monthly cost header")
 	}
@@ -87,12 +79,12 @@ func TestAgent_AKSCost(t *testing.T) {
 
 func TestAgent_NoIaC(t *testing.T) {
 	a := New()
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), protocol.AgentRequest{}, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "No IaC") {
 		t.Error("expected no-IaC message")
 	}

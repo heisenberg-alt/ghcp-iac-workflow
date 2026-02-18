@@ -57,7 +57,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle classifies intent, selects agents, and runs them in sequence.
 func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	prompt := promptText(req)
+	prompt := protocol.PromptText(req)
 	intent := classifyKeywords(prompt)
 	agentIDs := agentsForIntent(intent)
 
@@ -154,16 +154,4 @@ func classifyKeywords(message string) Intent {
 	}
 
 	return IntentHelp
-}
-
-func promptText(req protocol.AgentRequest) string {
-	if req.Prompt != "" {
-		return req.Prompt
-	}
-	for i := len(req.Messages) - 1; i >= 0; i-- {
-		if req.Messages[i].Role == "user" && req.Messages[i].Content != "" {
-			return req.Messages[i].Content
-		}
-	}
-	return ""
 }

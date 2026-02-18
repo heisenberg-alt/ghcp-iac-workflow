@@ -54,9 +54,9 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle processes deployment/promotion requests based on prompt keywords.
 func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	msg := strings.ToLower(promptText(req))
+	msg := strings.ToLower(protocol.PromptText(req))
 
-	if matchesAny(msg, "status", "environments", "versions") {
+	if protocol.MatchesAny(msg, "status", "environments", "versions") {
 		a.handleStatus(emit)
 		return nil
 	}
@@ -69,9 +69,9 @@ func (a *Agent) handleDeploy(msg string, emit protocol.Emitter) {
 	emit.SendMessage("## Deployment Manager\n\n")
 
 	target := "dev"
-	if matchesAny(msg, "staging", "stage", "test") {
+	if protocol.MatchesAny(msg, "staging", "stage", "test") {
 		target = "staging"
-	} else if matchesAny(msg, "prod", "production") {
+	} else if protocol.MatchesAny(msg, "prod", "production") {
 		target = "prod"
 	}
 
@@ -123,25 +123,4 @@ func (a *Agent) handleStatus(emit protocol.Emitter) {
 		emit.SendMessage(fmt.Sprintf("| %s | %s | %s | %s |\n",
 			env, s.Version, s.DeployedAt.Format("2006-01-02 15:04"), s.Status))
 	}
-}
-
-func promptText(req protocol.AgentRequest) string {
-	if req.Prompt != "" {
-		return req.Prompt
-	}
-	for i := len(req.Messages) - 1; i >= 0; i-- {
-		if req.Messages[i].Role == "user" && req.Messages[i].Content != "" {
-			return req.Messages[i].Content
-		}
-	}
-	return ""
-}
-
-func matchesAny(msg string, keywords ...string) bool {
-	for _, kw := range keywords {
-		if strings.Contains(msg, kw) {
-			return true
-		}
-	}
-	return false
 }

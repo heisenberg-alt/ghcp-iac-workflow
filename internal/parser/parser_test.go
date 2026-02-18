@@ -246,36 +246,6 @@ func TestParseBicep_UnknownResourceType(t *testing.T) {
 	}
 }
 
-func TestGetNestedProperty(t *testing.T) {
-	props := map[string]interface{}{
-		"name": "test",
-		"network_rules": map[string]interface{}{
-			"default_action": "Deny",
-			"bypass":         "AzureServices",
-		},
-	}
-
-	val, ok := GetNestedProperty(props, "network_rules.default_action")
-	if !ok || val != "Deny" {
-		t.Errorf("GetNestedProperty(network_rules.default_action) = (%v, %v), want (Deny, true)", val, ok)
-	}
-
-	val, ok = GetNestedProperty(props, "name")
-	if !ok || val != "test" {
-		t.Errorf("GetNestedProperty(name) = (%v, %v), want (test, true)", val, ok)
-	}
-
-	_, ok = GetNestedProperty(props, "missing.key")
-	if ok {
-		t.Error("GetNestedProperty(missing.key) should return false")
-	}
-
-	_, ok = GetNestedProperty(props, "name.nested")
-	if ok {
-		t.Error("GetNestedProperty(name.nested) should return false for non-map value")
-	}
-}
-
 func TestFindMatchingBrace(t *testing.T) {
 	tests := []struct {
 		code  string

@@ -112,28 +112,6 @@ func findMatchingBrace(code string, start int) int {
 	return -1
 }
 
-// GetNestedProperty retrieves a nested property using dot notation.
-// Example: GetNestedProperty(props, "network_rules.default_action")
-func GetNestedProperty(props map[string]interface{}, path string) (interface{}, bool) {
-	parts := strings.Split(path, ".")
-	current := props
-	for i, part := range parts {
-		val, ok := current[part]
-		if !ok {
-			return nil, false
-		}
-		if i == len(parts)-1 {
-			return val, true
-		}
-		nested, ok := val.(map[string]interface{})
-		if !ok {
-			return nil, false
-		}
-		current = nested
-	}
-	return nil, false
-}
-
 // String returns a human-readable representation of an IaC type.
 func (t IaCType) String() string {
 	return string(t)

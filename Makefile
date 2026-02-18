@@ -1,7 +1,6 @@
 .PHONY: build test lint run dev docker docker-run clean fmt vet
 
 BINARY_NAME=ghcp-iac-server
-CLI_NAME=gh-iac
 VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -10,16 +9,6 @@ LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.bu
 # Build
 build:
 	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/agent-host
-	go build $(LDFLAGS) -o bin/$(CLI_NAME) ./cmd/gh-iac
-
-build-server:
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/agent-host
-
-build-cli:
-	go build $(LDFLAGS) -o bin/$(CLI_NAME) ./cmd/gh-iac
-
-build-legacy:
-	go build $(LDFLAGS) -o bin/$(BINARY_NAME)-legacy ./cmd/server
 
 # Test
 test:
@@ -52,7 +41,7 @@ vet:
 	go vet ./...
 
 # Run
-run: build-server
+run: build
 	./bin/$(BINARY_NAME)
 
 dev:
@@ -60,9 +49,6 @@ dev:
 
 dev-mcp:
 	go run ./cmd/agent-host -- --transport=stdio
-
-dev-legacy:
-	go run ./cmd/server
 
 # Docker
 docker:

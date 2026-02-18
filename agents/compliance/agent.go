@@ -47,14 +47,14 @@ func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protoc
 		return nil
 	}
 
-	var findings []finding
+	var findings []protocol.Finding
 	for _, res := range req.IaC.Resources {
 		for _, rule := range a.rules {
 			if !rule.Applies(res.Type) {
 				continue
 			}
 			if msg := rule.Check(res.Properties); msg != "" {
-				findings = append(findings, finding{
+				findings = append(findings, protocol.Finding{
 					RuleID:       rule.ID,
 					Severity:     rule.Severity,
 					Resource:     res.Name,
@@ -82,13 +82,4 @@ func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protoc
 	emit.SendMessage("\n")
 
 	return nil
-}
-
-type finding struct {
-	RuleID       string
-	Severity     string
-	Resource     string
-	ResourceType string
-	Message      string
-	Remediation  string
 }

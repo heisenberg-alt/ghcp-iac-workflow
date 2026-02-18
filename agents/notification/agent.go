@@ -40,7 +40,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
 	emit.SendMessage("## Notification Manager\n\n")
 
-	msg := strings.ToLower(promptText(req))
+	msg := strings.ToLower(protocol.PromptText(req))
 
 	channel := "teams"
 	if strings.Contains(msg, "slack") {
@@ -61,16 +61,4 @@ func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protoc
 
 	emit.SendMessage("Notification sent successfully.\n")
 	return nil
-}
-
-func promptText(req protocol.AgentRequest) string {
-	if req.Prompt != "" {
-		return req.Prompt
-	}
-	for i := len(req.Messages) - 1; i >= 0; i-- {
-		if req.Messages[i].Role == "user" && req.Messages[i].Content != "" {
-			return req.Messages[i].Content
-		}
-	}
-	return ""
 }

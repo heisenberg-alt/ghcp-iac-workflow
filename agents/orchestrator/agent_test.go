@@ -6,17 +6,9 @@ import (
 	"testing"
 
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol/prototest"
 )
 
-type recorder struct {
-	messages []string
-}
-
-func (r *recorder) SendMessage(content string)               { r.messages = append(r.messages, content) }
-func (r *recorder) SendReferences(_ []protocol.Reference)    {}
-func (r *recorder) SendConfirmation(_ protocol.Confirmation) {}
-func (r *recorder) SendError(msg string)                     { r.messages = append(r.messages, msg) }
-func (r *recorder) SendDone()                                {}
 
 // stubAgent implements protocol.Agent for testing.
 type stubAgent struct {
@@ -63,12 +55,12 @@ func TestAgent_FullAnalysis(t *testing.T) {
 			{Role: "user", Content: "analyze this code:\n```hcl\nresource \"azurerm_storage_account\" \"t\" {}\n```"},
 		},
 	}
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	for _, expect := range []string{"[policy-output]", "[security-output]", "[compliance-output]", "[impact-output]"} {
 		if !strings.Contains(combined, expect) {
 			t.Errorf("missing %s in output", expect)
@@ -87,12 +79,12 @@ func TestAgent_CostIntent(t *testing.T) {
 			{Role: "user", Content: "estimate the cost of this infrastructure"},
 		},
 	}
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "[cost-output]") {
 		t.Error("expected cost agent to run")
 	}
@@ -113,12 +105,12 @@ func TestAgent_OpsIntent(t *testing.T) {
 			{Role: "user", Content: "deploy to staging environment"},
 		},
 	}
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "[deploy-output]") {
 		t.Error("expected deploy agent to run")
 	}
@@ -131,12 +123,12 @@ func TestAgent_HelpIntent(t *testing.T) {
 			{Role: "user", Content: "help me understand what you can do"},
 		},
 	}
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "Available commands") {
 		t.Error("expected help message")
 	}
@@ -151,12 +143,12 @@ func TestAgent_MissingAgent(t *testing.T) {
 			{Role: "user", Content: "analyze:\n```hcl\nresource \"x\" \"y\" {}\n```"},
 		},
 	}
-	rec := &recorder{}
+	rec := &prototest.Recorder{}
 	err := a.Handle(context.Background(), req, rec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	combined := strings.Join(rec.messages, "")
+	combined := strings.Join(rec.Messages, "")
 	if !strings.Contains(combined, "[policy-output]") {
 		t.Error("expected policy agent to run")
 	}
