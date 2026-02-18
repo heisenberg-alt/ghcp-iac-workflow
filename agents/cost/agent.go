@@ -4,16 +4,38 @@ package cost
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/llm"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/parser"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 // Agent estimates monthly Azure costs for IaC resources.
-type Agent struct{}
+type Agent struct {
+	llmClient *llm.Client
+	enableLLM bool
+}
 
 // New creates a new cost Agent.
-func New() *Agent { return &Agent{} }
+func New(opts ...Option) *Agent {
+	a := &Agent{}
+	for _, o := range opts {
+		o(a)
+	}
+	return a
+}
+
+// Option configures a cost Agent.
+type Option func(*Agent)
+
+// WithLLM enables LLM-enhanced cost analysis.
+func WithLLM(client *llm.Client) Option {
+	return func(a *Agent) {
+		a.llmClient = client
+		a.enableLLM = client != nil
+	}
+}
 
 func (a *Agent) ID() string { return "cost" }
 
@@ -34,23 +56,18 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 }
 
 // Handle estimates costs for parsed IaC resources.
-func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
+func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
 	if req.IaC == nil || len(req.IaC.Resources) == 0 {
 		emit.SendMessage("No IaC resources provided for cost estimation.\n")
 		return nil
 	}
 
 	var total float64
-	type item struct {
-		Name    string
-		SKU     string
-		Monthly float64
-	}
-	var items []item
+	var items []costItem
 
 	for _, res := range req.IaC.Resources {
 		est := estimateResource(res)
-		items = append(items, item{
+		items = append(items, costItem{
 			Name:    parser.ShortType(res.Type) + "." + res.Name,
 			SKU:     est.sku,
 			Monthly: est.monthly,
@@ -65,7 +82,49 @@ func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protoc
 	}
 	emit.SendMessage("\n")
 
+	// LLM-enhanced cost optimization tips
+	if a.enableLLM && a.llmClient != nil && req.Token != "" {
+		a.enhanceWithLLM(ctx, req, items, total, emit)
+	}
+
 	return nil
+}
+
+type costItem struct {
+	Name    string
+	SKU     string
+	Monthly float64
+}
+
+const costPrompt = `You are a senior Azure FinOps engineer. Given the IaC code and cost estimates below, provide:
+1. Cost optimization recommendations (reserved instances, right-sizing, cheaper SKUs)
+2. Potential hidden costs not reflected in the estimates (egress, storage transactions, IP addresses)
+3. A monthly vs. annual cost comparison if reserved instances were used
+
+Be specific. Reference actual resource names and SKUs. Use markdown. Keep it under 200 words.`
+
+func (a *Agent) enhanceWithLLM(ctx context.Context, req protocol.AgentRequest, items []costItem, total float64, emit protocol.Emitter) {
+	var sb strings.Builder
+	sb.WriteString("## IaC Code\n```\n")
+	if req.IaC != nil {
+		sb.WriteString(req.IaC.RawCode)
+	}
+	sb.WriteString("\n```\n\n## Cost Estimates\n")
+	sb.WriteString(fmt.Sprintf("Total: $%.2f/month\n", total))
+	for _, it := range items {
+		sb.WriteString(fmt.Sprintf("- %s (%s): $%.2f/month\n", it.Name, it.SKU, it.Monthly))
+	}
+
+	emit.SendMessage("\n#### AI Cost Optimization\n\n")
+	messages := []llm.ChatMessage{{Role: llm.RoleUser, Content: sb.String()}}
+	contentCh, errCh := a.llmClient.Stream(ctx, req.Token, costPrompt, messages)
+	for content := range contentCh {
+		emit.SendMessage(content)
+	}
+	if err := <-errCh; err != nil {
+		emit.SendMessage(fmt.Sprintf("\n_LLM enhancement unavailable: %v_\n", err))
+	}
+	emit.SendMessage("\n\n")
 }
 
 type estimate struct {

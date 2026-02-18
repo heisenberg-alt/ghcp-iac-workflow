@@ -23,6 +23,7 @@ import (
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/security"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/config"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/host"
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/llm"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/server"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/transport/mcpstdio"
@@ -42,23 +43,30 @@ func main() {
 
 	cfg := config.Load()
 
+	// Create LLM client if enabled
+	var llmClient *llm.Client
+	if cfg.EnableLLM {
+		llmClient = llm.NewClient(cfg.ModelEndpoint, cfg.ModelName, cfg.ModelMaxTokens, cfg.ModelTimeout)
+		log.Printf("LLM enabled: model=%s endpoint=%s", cfg.ModelName, cfg.ModelEndpoint)
+	}
+
 	// Build registry
 	registry := host.NewRegistry()
 
-	registry.Register(policy.New())
-	registry.Register(security.New())
-	registry.Register(compliance.New())
-	registry.Register(cost.New())
+	registry.Register(policy.New(policy.WithLLM(llmClient)))
+	registry.Register(security.New(security.WithLLM(llmClient)))
+	registry.Register(compliance.New(compliance.WithLLM(llmClient)))
+	registry.Register(cost.New(cost.WithLLM(llmClient)))
 	registry.Register(drift.New())
 	registry.Register(deploy.New())
 	registry.Register(notification.New(cfg.EnableNotifications))
-	registry.Register(impact.New())
+	registry.Register(impact.New(impact.WithLLM(llmClient)))
 	registry.Register(module.New())
 
 	// Orchestrator uses registry lookup
 	orch := orchestrator.New(func(id string) (protocol.Agent, bool) {
 		return registry.Get(id)
-	})
+	}, orchestrator.WithLLM(llmClient))
 	registry.Register(orch)
 
 	dispatcher := host.NewDispatcher(registry)
@@ -90,6 +98,7 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 
 		agentReq := protocol.AgentRequest{
 			Messages: make([]protocol.Message, len(req.Messages)),
+			Token:    r.Header.Get("X-GitHub-Token"),
 		}
 		for i, m := range req.Messages {
 			agentReq.Messages[i] = protocol.Message{Role: m.Role, Content: m.Content}
@@ -117,6 +126,7 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 
 		agentReq := protocol.AgentRequest{
 			Messages: make([]protocol.Message, len(req.Messages)),
+			Token:    r.Header.Get("X-GitHub-Token"),
 		}
 		for i, m := range req.Messages {
 			agentReq.Messages[i] = protocol.Message{Role: m.Role, Content: m.Content}

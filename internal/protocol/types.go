@@ -53,6 +53,7 @@ type AgentRequest struct {
 	References []Reference       `json:"references"`
 	IaC        *IaCInput         `json:"iac,omitempty"`
 	Metadata   map[string]string `json:"metadata,omitempty"`
+	Token      string            `json:"-"` // GitHub token for LLM calls; never serialized
 }
 
 // AgentMetadata describes an agent for discovery/listing.
