@@ -3,7 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 // SSEWriter writes Server-Sent Events in the Copilot Extension protocol format.
@@ -44,12 +47,12 @@ func (s *SSEWriter) SendMessage(content string) {
 }
 
 // SendReferences sends a copilot_references event with links.
-func (s *SSEWriter) SendReferences(refs []Reference) {
+func (s *SSEWriter) SendReferences(refs []protocol.Reference) {
 	s.sendEvent("copilot_references", refs)
 }
 
 // SendConfirmation sends a copilot_confirmation event.
-func (s *SSEWriter) SendConfirmation(conf Confirmation) {
+func (s *SSEWriter) SendConfirmation(conf protocol.Confirmation) {
 	s.sendEvent("copilot_confirmation", conf)
 }
 
@@ -67,6 +70,7 @@ func (s *SSEWriter) SendDone() {
 func (s *SSEWriter) sendEvent(event string, data interface{}) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
+		log.Printf("SSE marshal error for event %s: %v", event, err)
 		return
 	}
 	fmt.Fprintf(s.w, "event: %s\ndata: %s\n\n", event, jsonData)

@@ -4,6 +4,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 func TestNewSSEWriter(t *testing.T) {
@@ -69,7 +71,7 @@ func TestSSEWriter_SendError(t *testing.T) {
 func TestSSEWriter_SendReferences(t *testing.T) {
 	rr := httptest.NewRecorder()
 	sse := NewSSEWriter(rr)
-	refs := []Reference{
+	refs := []protocol.Reference{
 		{Title: "Test Doc", URL: "https://example.com"},
 	}
 	sse.SendReferences(refs)
@@ -86,7 +88,7 @@ func TestSSEWriter_SendReferences(t *testing.T) {
 func TestSSEWriter_SendConfirmation(t *testing.T) {
 	rr := httptest.NewRecorder()
 	sse := NewSSEWriter(rr)
-	conf := Confirmation{
+	conf := protocol.Confirmation{
 		Title:   "Deploy?",
 		Message: "Ready to deploy to prod",
 	}
@@ -101,58 +103,5 @@ func TestSSEWriter_SendConfirmation(t *testing.T) {
 	}
 }
 
-func TestAgentRequest_GetLastUserMessage(t *testing.T) {
-	req := AgentRequest{
-		Messages: []Message{
-			{Role: "user", Content: "first"},
-			{Role: "assistant", Content: "response"},
-			{Role: "user", Content: "second"},
-		},
-	}
-	got := req.GetLastUserMessage()
-	if got != "second" {
-		t.Errorf("GetLastUserMessage = %q, want second", got)
-	}
-}
-
-func TestAgentRequest_GetLastUserMessage_NoUser(t *testing.T) {
-	req := AgentRequest{
-		Messages: []Message{
-			{Role: "assistant", Content: "hello"},
-		},
-	}
-	got := req.GetLastUserMessage()
-	if got != "" {
-		t.Errorf("GetLastUserMessage with no user messages = %q, want empty", got)
-	}
-}
-
-func TestAgentRequest_GetLastUserMessage_Empty(t *testing.T) {
-	req := AgentRequest{}
-	got := req.GetLastUserMessage()
-	if got != "" {
-		t.Errorf("GetLastUserMessage with no messages = %q, want empty", got)
-	}
-}
-
-func TestAgentRequest_GetCodeFromReferences(t *testing.T) {
-	req := AgentRequest{
-		CopilotReferences: []CopilotReference{
-			{
-				Type: "file",
-				ID:   "main.tf",
-				Data: struct {
-					Content  string `json:"content,omitempty"`
-					Language string `json:"language,omitempty"`
-				}{
-					Content:  `resource "azurerm_storage_account" "ex" {}`,
-					Language: "terraform",
-				},
-			},
-		},
-	}
-	got := req.GetCodeFromReferences()
-	if !strings.Contains(got, "azurerm_storage_account") {
-		t.Errorf("GetCodeFromReferences = %q, should contain terraform code", got)
-	}
-}
+// Compile-time check that SSEWriter implements protocol.Emitter.
+var _ protocol.Emitter = (*SSEWriter)(nil)

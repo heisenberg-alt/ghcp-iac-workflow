@@ -9,7 +9,6 @@ import (
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol/prototest"
 )
 
-
 // stubAgent implements protocol.Agent for testing.
 type stubAgent struct {
 	id     string
@@ -166,7 +165,7 @@ func TestClassifyKeywords(t *testing.T) {
 		{"estimate cost please", IntentCost},
 		{"deploy to production", IntentOps},
 		{"detect drift in my environment", IntentOps},
-		{"agent status", IntentStatus},
+		{"agent status", IntentHelp},
 		{"help me", IntentHelp},
 		{"```hcl\nresource \"x\" \"y\" {}\n```", IntentAnalyze},
 	}

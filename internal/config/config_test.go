@@ -10,6 +10,8 @@ func clearEnv() {
 	vars := []string{
 		"PORT", "ENVIRONMENT", "LOG_LEVEL",
 		"GITHUB_WEBHOOK_SECRET",
+		"HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT",
+		"AGENT_TIMEOUT", "MAX_BODY_SIZE",
 		"MODEL_NAME", "MODEL_ENDPOINT", "MODEL_TIMEOUT", "MODEL_MAX_TOKENS",
 		"AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET",
 		"TEAMS_WEBHOOK_URL", "SLACK_WEBHOOK_URL",
@@ -223,5 +225,56 @@ func TestGetDurationEnv(t *testing.T) {
 	got = getDurationEnv("TEST_DUR", 10*time.Second)
 	if got != 10*time.Second {
 		t.Errorf("getDurationEnv('invalid') = %v, want 10s", got)
+	}
+}
+
+func TestLoad_Timeouts(t *testing.T) {
+	clearEnv()
+	cfg := Load()
+
+	// Check defaults
+	if cfg.ReadTimeout != 30*time.Second {
+		t.Errorf("ReadTimeout = %v, want 30s", cfg.ReadTimeout)
+	}
+	if cfg.WriteTimeout != 120*time.Second {
+		t.Errorf("WriteTimeout = %v, want 120s", cfg.WriteTimeout)
+	}
+	if cfg.IdleTimeout != 300*time.Second {
+		t.Errorf("IdleTimeout = %v, want 300s", cfg.IdleTimeout)
+	}
+	if cfg.AgentTimeout != 90*time.Second {
+		t.Errorf("AgentTimeout = %v, want 90s", cfg.AgentTimeout)
+	}
+
+	// Check custom values
+	os.Setenv("HTTP_READ_TIMEOUT", "10s")
+	os.Setenv("AGENT_TIMEOUT", "60s")
+	defer clearEnv()
+
+	cfg = Load()
+	if cfg.ReadTimeout != 10*time.Second {
+		t.Errorf("ReadTimeout = %v, want 10s", cfg.ReadTimeout)
+	}
+	if cfg.AgentTimeout != 60*time.Second {
+		t.Errorf("AgentTimeout = %v, want 60s", cfg.AgentTimeout)
+	}
+}
+
+func TestLoad_MaxBodySize(t *testing.T) {
+	clearEnv()
+	cfg := Load()
+
+	// Check default (1MB)
+	if cfg.MaxBodySize != 1<<20 {
+		t.Errorf("MaxBodySize = %d, want %d (1MB)", cfg.MaxBodySize, 1<<20)
+	}
+
+	// Check custom value
+	os.Setenv("MAX_BODY_SIZE", "2097152") // 2MB
+	defer clearEnv()
+
+	cfg = Load()
+	if cfg.MaxBodySize != 2097152 {
+		t.Errorf("MaxBodySize = %d, want 2097152", cfg.MaxBodySize)
 	}
 }

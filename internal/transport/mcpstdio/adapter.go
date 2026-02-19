@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/host"
@@ -182,7 +183,11 @@ func (a *Adapter) writeResult(id interface{}, result interface{}) {
 		ID:      id,
 		Result:  result,
 	}
-	data, _ := json.Marshal(resp)
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("MCP marshal error for result: %v", err)
+		return
+	}
 	fmt.Fprintf(a.writer, "%s\n", data)
 }
 
@@ -192,6 +197,10 @@ func (a *Adapter) writeError(id interface{}, code int, message string) {
 		ID:      id,
 		Error:   &RPCError{Code: code, Message: message},
 	}
-	data, _ := json.Marshal(resp)
+	data, err := json.Marshal(resp)
+	if err != nil {
+		log.Printf("MCP marshal error for error response: %v", err)
+		return
+	}
 	fmt.Fprintf(a.writer, "%s\n", data)
 }

@@ -121,6 +121,8 @@ func (c *Client) Complete(ctx context.Context, token, systemPrompt string, messa
 }
 
 // Stream performs a streaming chat completion. Returns channels for content chunks and errors.
+// The caller MUST drain the content channel to avoid goroutine leaks. The error channel
+// will receive at most one error and is closed when the stream completes.
 func (c *Client) Stream(ctx context.Context, token, systemPrompt string, messages []ChatMessage) (<-chan string, <-chan error) {
 	contentCh := make(chan string, 100)
 	errCh := make(chan error, 1)
@@ -173,6 +175,14 @@ func (c *Client) Stream(ctx context.Context, token, systemPrompt string, message
 
 		scanner := bufio.NewScanner(resp.Body)
 		for scanner.Scan() {
+			// Check context before processing each line to allow early exit
+			select {
+			case <-ctx.Done():
+				errCh <- ctx.Err()
+				return
+			default:
+			}
+
 			line := scanner.Text()
 			if !strings.HasPrefix(line, "data: ") {
 				continue

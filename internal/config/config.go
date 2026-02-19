@@ -29,6 +29,17 @@ type Config struct {
 	// Auth
 	WebhookSecret string `json:"-"` // never serialize
 
+	// HTTP Server timeouts
+	ReadTimeout  time.Duration `json:"read_timeout"`
+	WriteTimeout time.Duration `json:"write_timeout"`
+	IdleTimeout  time.Duration `json:"idle_timeout"`
+
+	// Agent dispatch timeout
+	AgentTimeout time.Duration `json:"agent_timeout"`
+
+	// Request body size limit (DoS protection)
+	MaxBodySize int64 `json:"max_body_size"`
+
 	// LLM / GitHub Models
 	ModelName      string        `json:"model_name"`
 	ModelEndpoint  string        `json:"model_endpoint"`
@@ -63,6 +74,13 @@ func Load() *Config {
 		LogLevel:    getEnv("LOG_LEVEL", logLevelForEnv(env)),
 
 		WebhookSecret: os.Getenv("GITHUB_WEBHOOK_SECRET"),
+
+		// HTTP Server timeouts
+		ReadTimeout:  getDurationEnv("HTTP_READ_TIMEOUT", 30*time.Second),
+		WriteTimeout: getDurationEnv("HTTP_WRITE_TIMEOUT", 120*time.Second),
+		IdleTimeout:  getDurationEnv("HTTP_IDLE_TIMEOUT", 300*time.Second),
+		AgentTimeout: getDurationEnv("AGENT_TIMEOUT", 90*time.Second),
+		MaxBodySize:  getInt64Env("MAX_BODY_SIZE", 1<<20), // 1MB default
 
 		ModelName:      getEnv("MODEL_NAME", modelForEnv(env)),
 		ModelEndpoint:  getEnv("MODEL_ENDPOINT", "https://models.inference.ai.azure.com"),
@@ -134,6 +152,15 @@ func getEnv(key, defaultVal string) string {
 func getIntEnv(key string, defaultVal int) int {
 	if val := os.Getenv(key); val != "" {
 		if n, err := strconv.Atoi(val); err == nil {
+			return n
+		}
+	}
+	return defaultVal
+}
+
+func getInt64Env(key string, defaultVal int64) int64 {
+	if val := os.Getenv(key); val != "" {
+		if n, err := strconv.ParseInt(val, 10, 64); err == nil {
 			return n
 		}
 	}

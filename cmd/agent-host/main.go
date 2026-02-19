@@ -10,6 +10,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/compliance"
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/cost"
@@ -21,14 +24,13 @@ import (
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/orchestrator"
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/policy"
 	"github.com/ghcp-iac/ghcp-iac-workflow/agents/security"
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/auth"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/config"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/host"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/llm"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/server"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/transport/mcpstdio"
-
-	httpx "github.com/ghcp-iac/ghcp-iac-workflow/internal/transport/http"
 )
 
 var (
@@ -87,6 +89,7 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 
 	// Agent endpoint — uses orchestrator as default
 	mux.HandleFunc("POST /agent", func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, cfg.MaxBodySize)
 		var req server.AgentRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Bad request", http.StatusBadRequest)
@@ -94,7 +97,10 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 		}
 
 		sse := server.NewSSEWriter(w)
-		emit := httpx.NewSSEEmitter(sse)
+		if sse == nil {
+			http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+			return
+		}
 
 		agentReq := protocol.AgentRequest{
 			Messages: make([]protocol.Message, len(req.Messages)),
@@ -105,15 +111,20 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 		}
 		host.ParseAndEnrich(&agentReq)
 
-		if err := dispatcher.Dispatch(r.Context(), "", agentReq, emit); err != nil {
-			emit.SendError(err.Error())
+		// Add timeout for agent dispatch
+		ctx, cancel := context.WithTimeout(r.Context(), cfg.AgentTimeout)
+		defer cancel()
+
+		if err := dispatcher.Dispatch(ctx, "", agentReq, sse); err != nil {
+			sse.SendError(err.Error())
 		}
-		emit.SendDone()
+		sse.SendDone()
 	})
 
 	// Specific agent endpoint
 	mux.HandleFunc("POST /agent/{id}", func(w http.ResponseWriter, r *http.Request) {
 		agentID := r.PathValue("id")
+		r.Body = http.MaxBytesReader(w, r.Body, cfg.MaxBodySize)
 
 		var req server.AgentRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -122,7 +133,10 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 		}
 
 		sse := server.NewSSEWriter(w)
-		emit := httpx.NewSSEEmitter(sse)
+		if sse == nil {
+			http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+			return
+		}
 
 		agentReq := protocol.AgentRequest{
 			Messages: make([]protocol.Message, len(req.Messages)),
@@ -133,10 +147,14 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 		}
 		host.ParseAndEnrich(&agentReq)
 
-		if err := dispatcher.Dispatch(r.Context(), agentID, agentReq, emit); err != nil {
-			emit.SendError(err.Error())
+		// Add timeout for agent dispatch
+		ctx, cancel := context.WithTimeout(r.Context(), cfg.AgentTimeout)
+		defer cancel()
+
+		if err := dispatcher.Dispatch(ctx, agentID, agentReq, sse); err != nil {
+			sse.SendError(err.Error())
 		}
-		emit.SendDone()
+		sse.SendDone()
 	})
 
 	// Agent listing
@@ -162,8 +180,34 @@ func runHTTP(cfg *config.Config, registry *host.Registry, dispatcher *host.Dispa
 		port = "8080"
 	}
 
+	// Wrap with signature verification middleware
+	var handler http.Handler = mux
+	handler = auth.Middleware(cfg.WebhookSecret, cfg.IsDev())(handler)
+
+	// Configure server with timeouts
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      handler,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		IdleTimeout:  cfg.IdleTimeout,
+	}
+
+	// Graceful shutdown
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		log.Println("Shutting down server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("Server shutdown error: %v", err)
+		}
+	}()
+
 	log.Printf("agent-host listening on :%s (version=%s commit=%s)", port, version, commit)
-	if err := http.ListenAndServe(":"+port, mux); err != nil && err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
 	}
 }

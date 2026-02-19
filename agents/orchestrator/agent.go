@@ -21,7 +21,6 @@ const (
 	IntentAnalyze Intent = "analyze"
 	IntentCost    Intent = "cost"
 	IntentOps     Intent = "ops"
-	IntentStatus  Intent = "status"
 	IntentHelp    Intent = "help"
 )
 
@@ -88,6 +87,14 @@ func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit prot
 	tee := &teeEmitter{inner: emit}
 
 	for _, id := range agentIDs {
+		// Check context before invoking each agent
+		select {
+		case <-ctx.Done():
+			emit.SendMessage(fmt.Sprintf("\n_Analysis interrupted: %v_\n", ctx.Err()))
+			return ctx.Err()
+		default:
+		}
+
 		agent, ok := a.lookup(id)
 		if !ok {
 			msg := fmt.Sprintf("Agent `%s` is not registered.\n\n", id)
@@ -160,8 +167,7 @@ func (a *Agent) handleHelp(emit protocol.Emitter) {
 	emit.SendMessage("Available commands:\n\n")
 	emit.SendMessage("- **Analyze** — `analyze`, `scan`, `review`, `audit` — Runs policy, security, compliance, and impact analysis\n")
 	emit.SendMessage("- **Cost** — `cost`, `estimate`, `pricing` — Estimates monthly Azure costs\n")
-	emit.SendMessage("- **Ops** — `deploy`, `drift`, `notify` — Infrastructure operations\n")
-	emit.SendMessage("- **Status** — `status`, `health` — Agent health check\n\n")
+	emit.SendMessage("- **Ops** — `deploy`, `drift`, `notify` — Infrastructure operations\n\n")
 	emit.SendMessage("Include Terraform or Bicep code in a fenced block for analysis.\n")
 }
 
@@ -174,10 +180,6 @@ func agentsForIntent(intent Intent) []string {
 		return []string{"cost"}
 	case IntentOps:
 		return []string{"deploy", "drift", "notification"}
-	case IntentStatus:
-		return nil // handled as help for now
-	case IntentHelp:
-		return nil
 	default:
 		return nil
 	}
@@ -200,8 +202,7 @@ func classifyKeywords(message string) Intent {
 		{IntentAnalyze, []string{"scan", "audit", "review", "analyze", "security", "policy", "compliance", "vulnerability", "check", "full"}},
 		{IntentCost, []string{"cost", "price", "pricing", "estimate", "budget", "expensive", "spending"}},
 		{IntentOps, []string{"deploy", "promote", "drift", "release", "rollback", "environment", "staging", "production", "notify", "notification"}},
-		{IntentStatus, []string{"status", "health", "running", "uptime"}},
-		{IntentHelp, []string{"help", "how to", "what can", "usage", "guide", "capabilities"}},
+		{IntentHelp, []string{"help", "how to", "what can", "usage", "guide", "capabilities", "status", "health"}},
 	}
 
 	best := scored{IntentHelp, 0}
