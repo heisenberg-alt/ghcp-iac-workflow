@@ -20,10 +20,17 @@ type Resource struct {
 	RawBlock   string                 `json:"raw_block"`
 }
 
+// SourceFile represents a single file in multi-file IaC input.
+type SourceFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
 // IaCInput holds parsed IaC data attached to a request by the host.
 type IaCInput struct {
 	Format    SourceFormat `json:"format"`
 	RawCode   string       `json:"raw_code"`
+	Files     []SourceFile `json:"files,omitempty"`
 	Resources []Resource   `json:"resources"`
 }
 

@@ -61,8 +61,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle runs compliance rules against parsed IaC resources.
 func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	if req.IaC == nil || len(req.IaC.Resources) == 0 {
-		emit.SendMessage("No IaC resources provided for compliance analysis.\n")
+	if !protocol.RequireIaC(req, emit, "compliance") {
 		return nil
 	}
 

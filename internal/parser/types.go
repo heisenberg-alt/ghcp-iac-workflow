@@ -13,15 +13,6 @@ const (
 	Unknown   IaCType = "Unknown"
 )
 
-// Resource represents a parsed IaC resource.
-type Resource struct {
-	Type       string                 `json:"type"`
-	Name       string                 `json:"name"`
-	Properties map[string]interface{} `json:"properties"`
-	Line       int                    `json:"line"`
-	RawBlock   string                 `json:"raw_block,omitempty"`
-}
-
 // ShortType strips the provider prefix from a resource type.
 // e.g. "azurerm_storage_account" → "storage_account"
 func ShortType(t string) string {

@@ -285,14 +285,6 @@ func TestIaCType_String(t *testing.T) {
 	}
 }
 
-func TestResource_String(t *testing.T) {
-	r := Resource{Type: "azurerm_storage_account", Name: "ex"}
-	got := r.String()
-	if got != "azurerm_storage_account.ex" {
-		t.Errorf("Resource.String() = %q, want azurerm_storage_account.ex", got)
-	}
-}
-
 func TestShortType(t *testing.T) {
 	tests := []struct {
 		input string

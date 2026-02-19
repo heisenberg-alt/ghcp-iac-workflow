@@ -4,13 +4,15 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 var tfResourceRe = regexp.MustCompile(`resource\s+"([^"]+)"\s+"([^"]+)"\s*\{`)
 
 // ParseTerraform extracts resources from Terraform HCL code.
-func ParseTerraform(code string) []Resource {
-	var resources []Resource
+func ParseTerraform(code string) []protocol.Resource {
+	var resources []protocol.Resource
 	matches := tfResourceRe.FindAllStringSubmatchIndex(code, -1)
 
 	for _, loc := range matches {
@@ -30,7 +32,7 @@ func ParseTerraform(code string) []Resource {
 		lineNum := strings.Count(code[:loc[0]], "\n") + 1
 
 		props := parseTerraformBlock(block)
-		resources = append(resources, Resource{
+		resources = append(resources, protocol.Resource{
 			Type:       resType,
 			Name:       resName,
 			Properties: props,

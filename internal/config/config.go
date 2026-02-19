@@ -47,7 +47,6 @@ type Config struct {
 
 	// Feature flags
 	EnableLLM           bool `json:"enable_llm"`
-	EnableCostAPI       bool `json:"enable_cost_api"`
 	EnableNotifications bool `json:"enable_notifications"`
 }
 
@@ -79,7 +78,6 @@ func Load() *Config {
 		SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
 
 		EnableLLM:           getBoolEnv("ENABLE_LLM", true),
-		EnableCostAPI:       getBoolEnv("ENABLE_COST_API", true),
 		EnableNotifications: getBoolEnv("ENABLE_NOTIFICATIONS", env == EnvProd),
 	}
 }

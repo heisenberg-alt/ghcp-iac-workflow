@@ -57,8 +57,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle estimates costs for parsed IaC resources.
 func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	if req.IaC == nil || len(req.IaC.Resources) == 0 {
-		emit.SendMessage("No IaC resources provided for cost estimation.\n")
+	if !protocol.RequireIaC(req, emit, "cost estimation") {
 		return nil
 	}
 

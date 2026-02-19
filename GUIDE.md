@@ -16,8 +16,8 @@ GitHub Copilot Extension for AI-powered Infrastructure as Code governance (Terra
 ### Option 1: Local / Binary
 
 ```bash
-make build-server
-ENVIRONMENT=dev ENABLE_LLM=true go run ./cmd/server
+make build
+ENVIRONMENT=dev ENABLE_LLM=true go run ./cmd/agent-host
 # → http://localhost:8080
 ```
 

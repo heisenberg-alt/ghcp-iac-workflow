@@ -13,21 +13,21 @@ You are a test agent for the ghcp-iac Copilot Extension — an AI-powered Infras
 1. **Unit tests** — Run `go test ./... -v -race` to verify all packages pass.
 2. **Build verification** — Run `go build ./...` to confirm clean compilation.
 3. **Lint checks** — Run `go vet ./...` and check `gofmt -l .` for formatting.
-4. **Server smoke test** — Start the server with `PORT=9090 ENVIRONMENT=dev ENABLE_LLM=false go run ./cmd/server`, hit `/health`, and send a sample POST to `/agent` with Terraform code.
+4. **Server smoke test** — Start the server with `PORT=9090 ENVIRONMENT=dev ENABLE_LLM=false go run ./cmd/agent-host`, hit `/health`, and send a sample POST to `/agent` with Terraform code.
 5. **Analysis rule validation** — Verify that known-insecure Terraform (e.g. `enable_https_traffic_only = false`) triggers the expected policy/security findings.
 
 ## Project structure
 
-- `cmd/server/` — Server entry point
-- `internal/analyzer/` — IaC analysis engine (rules + LLM enhancement)
-- `internal/auth/` — Webhook signature verification
+- `cmd/agent-host/` — Server entry point (single host for all agents)
+- `agents/` — Modular agents (policy, security, compliance, cost, impact, drift, deploy, notification, module, orchestrator)
+- `internal/analyzer/` — IaC analysis engine (rules, severity constants, risk weights)
 - `internal/config/` — Environment-based configuration
-- `internal/costestimator/` — Azure cost estimation
-- `internal/infraops/` — Drift detection, deployment promotion, notifications
+- `internal/host/` — Agent registry and dispatcher
 - `internal/llm/` — GitHub Models chat completions client
 - `internal/parser/` — Terraform & Bicep parser
-- `internal/router/` — Intent classification (LLM + keyword fallback)
+- `internal/protocol/` — Shared types (Agent, Emitter, Request, Finding)
 - `internal/server/` — HTTP server, SSE streaming, middleware
+- `internal/transport/` — HTTP and MCP stdio transport adapters
 
 ## How to run
 
@@ -39,7 +39,7 @@ go test ./... -v -race
 go build ./...
 
 # Start server for smoke testing
-PORT=9090 ENVIRONMENT=dev ENABLE_LLM=false go run ./cmd/server
+PORT=9090 ENVIRONMENT=dev ENABLE_LLM=false go run ./cmd/agent-host
 
 # Health check
 curl http://localhost:9090/health

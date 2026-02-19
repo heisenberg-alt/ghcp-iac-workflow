@@ -13,7 +13,7 @@ func clearEnv() {
 		"MODEL_NAME", "MODEL_ENDPOINT", "MODEL_TIMEOUT", "MODEL_MAX_TOKENS",
 		"AZURE_SUBSCRIPTION_ID", "AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET",
 		"TEAMS_WEBHOOK_URL", "SLACK_WEBHOOK_URL",
-		"ENABLE_LLM", "ENABLE_COST_API", "ENABLE_NOTIFICATIONS",
+		"ENABLE_LLM", "ENABLE_NOTIFICATIONS",
 	}
 	for _, v := range vars {
 		os.Unsetenv(v)
@@ -48,9 +48,6 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if !cfg.EnableLLM {
 		t.Error("EnableLLM should default to true")
-	}
-	if !cfg.EnableCostAPI {
-		t.Error("EnableCostAPI should default to true")
 	}
 	if cfg.EnableNotifications {
 		t.Error("EnableNotifications should default to false in dev")
@@ -111,7 +108,6 @@ func TestLoad_CustomValues(t *testing.T) {
 	os.Setenv("MODEL_TIMEOUT", "60s")
 	os.Setenv("MODEL_MAX_TOKENS", "8192")
 	os.Setenv("ENABLE_LLM", "false")
-	os.Setenv("ENABLE_COST_API", "no")
 	defer clearEnv()
 
 	cfg := Load()
@@ -127,9 +123,6 @@ func TestLoad_CustomValues(t *testing.T) {
 	}
 	if cfg.EnableLLM {
 		t.Error("EnableLLM should be false")
-	}
-	if cfg.EnableCostAPI {
-		t.Error("EnableCostAPI should be false")
 	}
 }
 

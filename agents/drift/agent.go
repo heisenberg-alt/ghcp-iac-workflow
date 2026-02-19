@@ -34,8 +34,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle checks for configuration drift in parsed resources.
 func (a *Agent) Handle(_ context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	if req.IaC == nil || len(req.IaC.Resources) == 0 {
-		emit.SendMessage("No IaC code provided. Provide Terraform to compare against expected state.\n")
+	if !protocol.RequireIaC(req, emit, "drift detection") {
 		return nil
 	}
 

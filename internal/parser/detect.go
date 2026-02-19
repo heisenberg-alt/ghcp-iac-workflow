@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 // Pre-compiled regexes for IaC type detection — avoids per-call compilation.
@@ -73,13 +74,13 @@ func ExtractCode(message string) string {
 }
 
 // ParseResources detects the IaC type and parses resources accordingly.
-func ParseResources(code string) []Resource {
+func ParseResources(code string) []protocol.Resource {
 	iacType := DetectIaCType(code)
 	return ParseResourcesOfType(code, iacType)
 }
 
 // ParseResourcesOfType parses resources for a specific IaC type.
-func ParseResourcesOfType(code string, iacType IaCType) []Resource {
+func ParseResourcesOfType(code string, iacType IaCType) []protocol.Resource {
 	switch iacType {
 	case Terraform:
 		return ParseTerraform(code)
@@ -115,9 +116,4 @@ func findMatchingBrace(code string, start int) int {
 // String returns a human-readable representation of an IaC type.
 func (t IaCType) String() string {
 	return string(t)
-}
-
-// String returns a human-readable representation of a resource.
-func (r Resource) String() string {
-	return fmt.Sprintf("%s.%s", r.Type, r.Name)
 }

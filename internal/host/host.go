@@ -100,28 +100,17 @@ func ParseAndEnrich(req *protocol.AgentRequest) {
 	iacType := parser.DetectIaCType(code)
 	resources := parser.ParseResourcesOfType(code, iacType)
 
-	protoResources := make([]protocol.Resource, len(resources))
-	for i, r := range resources {
-		protoResources[i] = protocol.Resource{
-			Type:       r.Type,
-			Name:       r.Name,
-			Properties: r.Properties,
-			Line:       r.Line,
-			RawBlock:   r.RawBlock,
-		}
-	}
-
 	format := protocol.FormatUnknown
 	switch iacType {
-	case "Terraform":
+	case parser.Terraform:
 		format = protocol.FormatTerraform
-	case "Bicep":
+	case parser.Bicep:
 		format = protocol.FormatBicep
 	}
 
 	req.IaC = &protocol.IaCInput{
 		Format:    format,
 		RawCode:   code,
-		Resources: protoResources,
+		Resources: resources,
 	}
 }

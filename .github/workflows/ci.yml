@@ -65,7 +65,7 @@ jobs:
         run: |
           CGO_ENABLED=0 go build \
             -ldflags="-s -w -X main.version=${{ github.sha }} -X main.commit=${{ github.sha }}" \
-            -o ghcp-iac ./cmd/server
+            -o ghcp-iac ./cmd/agent-host
 
       - name: Upload binary
         uses: actions/upload-artifact@v4

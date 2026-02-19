@@ -104,8 +104,7 @@ The orchestrator classifies each request and dispatches to the appropriate agent
 ```
 ghcp-iac-workflow/
 ├── cmd/
-│   ├── agent-host/          # New entry point — multi-agent host (HTTP + MCP stdio)
-│   └── server/              # Legacy entry point (single-router architecture)
+│   └── agent-host/          # Entry point — multi-agent host (HTTP + MCP stdio)
 ├── agents/                  # Specialized agent packages
 │   ├── policy/              # Policy analysis agent (6 rules)
 │   ├── security/            # Security scanning agent (4 rules)
@@ -124,13 +123,9 @@ ghcp-iac-workflow/
 │   │   ├── http/            # SSE emitter adapter for HTTP transport
 │   │   └── mcpstdio/        # MCP stdio adapter (JSON-RPC 2.0 over stdin/stdout)
 │   ├── analyzer/            # IaC analysis engine (12 rules: policy, security, compliance)
-│   ├── auth/                # HMAC-SHA256 webhook signature verification
 │   ├── config/              # Environment-based configuration loader
-│   ├── costestimator/       # Azure cost estimation + Azure Retail Prices API
-│   ├── infraops/            # Drift detection, deployment promotion, notifications
 │   ├── llm/                 # GitHub Models API client (streaming + non-streaming)
 │   ├── parser/              # Terraform HCL & Bicep parser
-│   ├── router/              # LLM-powered intent classification with keyword fallback
 │   ├── server/              # HTTP server, SSE writer, middleware
 │   └── testkit/             # Test fixtures and characterization tests
 ├── infra/
@@ -171,11 +166,11 @@ cd ghcp-iac-workflow
 go mod download
 
 # Build the agent-host binary
-make build-server
-# Output: bin/ghcp-iac-server
-
-# Or build everything (agent-host + CLI)
 make build
+# Output: ./ghcp-iac
+
+# Run locally
+make dev
 ```
 
 ### Run Locally
@@ -561,14 +556,10 @@ Supported JSON-RPC methods:
 ## Makefile Reference
 
 ```bash
-make build          # Build agent-host + CLI binaries
-make build-server   # Build agent-host binary only
-make build-cli      # Build CLI binary only
-make build-legacy   # Build legacy server (cmd/server)
+make build          # Build agent-host binary to bin/
 make dev            # Run agent-host locally (HTTP mode)
 make dev-mcp        # Run agent-host locally (MCP stdio mode)
-make dev-legacy     # Run legacy server
-make test           # All tests with race detector (175 tests, 20 packages)
+make test           # All tests with race detector
 make test-agents    # Agent package tests only
 make test-cover     # Tests + coverage report
 make test-cover-html # Tests + open HTML coverage in browser

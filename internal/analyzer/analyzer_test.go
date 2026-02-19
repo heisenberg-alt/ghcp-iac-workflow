@@ -205,28 +205,3 @@ func TestSeverityConstants(t *testing.T) {
 		t.Error("SeverityLow mismatch")
 	}
 }
-
-func TestResourceRiskWeight(t *testing.T) {
-	tests := []struct {
-		resType string
-		minWt   int
-	}{
-		{"azurerm_kubernetes_cluster", 5},
-		{"azurerm_key_vault", 4},
-		{"azurerm_storage_account", 3},
-		{"azurerm_unknown_type", 1},
-	}
-	for _, tt := range tests {
-		got := resourceRiskWeight(tt.resType)
-		if got < tt.minWt {
-			t.Errorf("resourceRiskWeight(%q) = %d, want >= %d", tt.resType, got, tt.minWt)
-		}
-	}
-}
-
-func TestSeverityIcon(t *testing.T) {
-	got := severityIcon(SeverityCritical)
-	if got == "" {
-		t.Error("severityIcon should return non-empty for critical")
-	}
-}

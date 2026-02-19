@@ -1,6 +1,9 @@
 package protocol
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // PromptText extracts the user prompt from an AgentRequest.
 // It checks the Prompt field first, then falls back to the last user message.
@@ -26,9 +29,20 @@ func MatchesAny(msg string, keywords ...string) bool {
 	return false
 }
 
+// RequireIaC checks for IaC input and emits a message if missing.
+// Returns true if IaC is present and has resources.
+func RequireIaC(req AgentRequest, emit Emitter, domain string) bool {
+	if req.IaC == nil || len(req.IaC.Resources) == 0 {
+		emit.SendMessage(fmt.Sprintf("No IaC resources provided for %s analysis.\n", domain))
+		return false
+	}
+	return true
+}
+
 // Finding represents a rule violation found during analysis.
 type Finding struct {
 	RuleID       string
+	Category     string
 	Severity     string
 	Resource     string
 	ResourceType string

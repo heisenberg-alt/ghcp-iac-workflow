@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/analyzer"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/llm"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/parser"
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
@@ -57,8 +58,7 @@ func (a *Agent) Capabilities() protocol.AgentCapabilities {
 
 // Handle computes blast radius for parsed resources.
 func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit protocol.Emitter) error {
-	if req.IaC == nil || len(req.IaC.Resources) == 0 {
-		emit.SendMessage("No IaC resources provided for impact analysis.\n")
+	if !protocol.RequireIaC(req, emit, "impact") {
 		return nil
 	}
 
@@ -67,7 +67,7 @@ func (a *Agent) Handle(ctx context.Context, req protocol.AgentRequest, emit prot
 	total := 0
 	var summary strings.Builder
 	for _, res := range req.IaC.Resources {
-		weight := resourceRiskWeight(res.Type)
+		weight := analyzer.ResourceRiskWeight(res.Type)
 		total += weight
 		line := fmt.Sprintf("- **%s.%s** — risk weight: %d\n", parser.ShortType(res.Type), res.Name, weight)
 		emit.SendMessage(line)
@@ -120,27 +120,4 @@ func (a *Agent) enhanceWithLLM(ctx context.Context, req protocol.AgentRequest, s
 		emit.SendMessage(fmt.Sprintf("\n_LLM enhancement unavailable: %v_\n", err))
 	}
 	emit.SendMessage("\n\n")
-}
-
-func resourceRiskWeight(resType string) int {
-	weights := map[string]int{
-		"azurerm_kubernetes_cluster":     8,
-		"azurerm_virtual_machine":        5,
-		"azurerm_linux_virtual_machine":  5,
-		"azurerm_mssql_server":           7,
-		"azurerm_mssql_database":         6,
-		"azurerm_cosmosdb_account":       7,
-		"azurerm_key_vault":              6,
-		"azurerm_storage_account":        4,
-		"azurerm_container_registry":     4,
-		"azurerm_service_plan":           3,
-		"azurerm_redis_cache":            5,
-		"azurerm_virtual_network":        3,
-		"azurerm_subnet":                 2,
-		"azurerm_network_security_group": 4,
-	}
-	if w, ok := weights[resType]; ok {
-		return w
-	}
-	return 2
 }

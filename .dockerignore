@@ -1,6 +1,6 @@
 # Build artifacts
 /ghcp-iac
-/cmd/server/server
+/cmd/agent-host/agent-host
 *.exe
 *.dll
 *.so

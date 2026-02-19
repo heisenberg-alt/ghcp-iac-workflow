@@ -3,6 +3,8 @@ package parser
 import (
 	"regexp"
 	"strings"
+
+	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol"
 )
 
 var bicepResourceRe = regexp.MustCompile(`resource\s+(\w+)\s+'([^']+)'\s*=\s*\{`)
@@ -43,8 +45,8 @@ var bicepToTFProperty = map[string]string{
 }
 
 // ParseBicep extracts resources from Bicep code.
-func ParseBicep(code string) []Resource {
-	var resources []Resource
+func ParseBicep(code string) []protocol.Resource {
+	var resources []protocol.Resource
 	matches := bicepResourceRe.FindAllStringSubmatchIndex(code, -1)
 
 	for _, loc := range matches {
@@ -78,7 +80,7 @@ func ParseBicep(code string) []Resource {
 
 		props := parseBicepBlock(block)
 
-		resources = append(resources, Resource{
+		resources = append(resources, protocol.Resource{
 			Type:       tfType,
 			Name:       resName,
 			Properties: props,
