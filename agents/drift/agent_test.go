@@ -10,7 +10,6 @@ import (
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol/prototest"
 )
 
-
 func TestAgent_ID(t *testing.T) {
 	if New().ID() != "drift" {
 		t.Error("expected ID = drift")

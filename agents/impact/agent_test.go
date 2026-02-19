@@ -10,7 +10,6 @@ import (
 	"github.com/ghcp-iac/ghcp-iac-workflow/internal/protocol/prototest"
 )
 
-
 func TestAgent_ID(t *testing.T) {
 	if New().ID() != "impact" {
 		t.Error("expected ID = impact")
