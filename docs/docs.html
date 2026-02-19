@@ -76,7 +76,7 @@ make dev
 # → http://localhost:8080</code></pre>
 
 <pre><code>curl http://localhost:8080/health
-# {"status":"healthy","environment":"dev","llm_enabled":true,"model":"gpt-4.1-mini"}</code></pre>
+# {"status":"ok","service":"ghcp-iac-agent-host","version":"dev","environment":"dev","agents":10}</code></pre>
 
 <!-- ============================================ -->
 <h2 id="try-it">Try It Out</h2>
@@ -97,7 +97,6 @@ make dev
   <tr><td>Analyze</td><td><code>"scan this terraform for security issues"</code></td></tr>
   <tr><td>Cost</td><td><code>"estimate cost for a Standard_D4s_v3 VM"</code></td></tr>
   <tr><td>Ops</td><td><code>"deploy to staging"</code> / <code>"check for drift"</code></td></tr>
-  <tr><td>Status</td><td><code>"status"</code></td></tr>
   <tr><td>Help</td><td><code>"what can you do?"</code></td></tr>
 </table>
 
@@ -213,8 +212,10 @@ gh release create v1.0.0 --title "v1.0.0"
 
 <table>
   <tr><th>Method</th><th>Path</th><th>Description</th></tr>
-  <tr><td><code>POST</code></td><td><code>/agent</code></td><td>Copilot Extension endpoint — SSE stream response</td></tr>
-  <tr><td><code>GET</code></td><td><code>/health</code></td><td>Health check — JSON with status, env, model info</td></tr>
+  <tr><td><code>POST</code></td><td><code>/agent</code></td><td>Orchestrator endpoint — SSE stream response</td></tr>
+  <tr><td><code>POST</code></td><td><code>/agent/{id}</code></td><td>Direct agent endpoint — invoke specific agent by ID</td></tr>
+  <tr><td><code>GET</code></td><td><code>/agents</code></td><td>List all registered agents (JSON)</td></tr>
+  <tr><td><code>GET</code></td><td><code>/health</code></td><td>Health check — JSON with status, env, version, agent count</td></tr>
 </table>
 
 <h3>Register as Copilot Extension</h3>

@@ -120,7 +120,6 @@ ghcp-iac-workflow/
 │   ├── protocol/            # Agent interface, Emitter interface, shared types
 │   ├── host/                # Agent registry, dispatcher, request enrichment
 │   ├── transport/
-│   │   ├── http/            # SSE emitter adapter for HTTP transport
 │   │   └── mcpstdio/        # MCP stdio adapter (JSON-RPC 2.0 over stdin/stdout)
 │   ├── analyzer/            # IaC analysis engine (12 rules: policy, security, compliance)
 │   ├── config/              # Environment-based configuration loader

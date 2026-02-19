@@ -95,13 +95,13 @@ Create GitHub environments (`dev`, `test`, `production`) and set `production` to
 
 ### 1. IaC Analysis
 
-Scans Terraform and Bicep code against 17 built-in rules across three categories:
+Scans Terraform and Bicep code against 12 built-in rules across three categories:
 
 | Category | Rules | Examples |
 |----------|-------|---------|
 | **Policy** | 6 | HTTPS enforcement, AKS RBAC, TLS 1.2, no public blob, Key Vault soft delete / purge protection |
-| **Security** | 5 | Hardcoded secrets, public network access, encryption at rest, overly permissive NSGs |
-| **Compliance** | 6 | CIS Azure (storage HTTPS, Key Vault recovery), NIST 800-53 (network boundaries, encryption), SOC 2 (access controls, TLS) |
+| **Security** | 4 | Hardcoded secrets, public network access, encryption at rest, overly permissive NSGs |
+| **Compliance** | 2 | NIST 800-53 (network boundaries SC-7, encryption at rest SC-28) |
 
 Each finding includes severity (Critical / High / Medium / Low), blast radius score, and remediation guidance.
 
@@ -139,18 +139,9 @@ Drift detection, environment promotion (dev → staging → prod), and optional 
 ```
 @ghcp-iac Deploy my app to staging
 @ghcp-iac Check for drift in production
-@ghcp-iac Show environment status
 ```
 
-### 4. Status
-
-Reports agent version, build info, environment, and feature toggles.
-
-```
-@ghcp-iac status
-```
-
-### 5. Help
+### 4. Help
 
 Lists all capabilities with example prompts.
 
@@ -185,7 +176,9 @@ Lists all capabilities with example prompts.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/agent` | Copilot Extension endpoint (SSE stream) |
+| `POST` | `/agent` | Orchestrator endpoint — SSE stream response |
+| `POST` | `/agent/{id}` | Direct agent endpoint — invoke specific agent by ID |
+| `GET` | `/agents` | List all registered agents (JSON) |
 | `GET` | `/health` | Health check (JSON) |
 
 ---
